@@ -1,0 +1,32 @@
+[
+  {
+    "kc_id": 1,
+    "kc_name": "Class Definition",
+    "description": "Understanding how to define and structure classes in OOP"
+  },
+  {
+    "kc_id": 2,
+    "kc_name": "Object Instantiation", 
+    "description": "Creating objects from classes and understanding the instantiation process"
+  },
+  {
+    "kc_id": 3,
+    "kc_name": "Inheritance Concepts",
+    "description": "Understanding inheritance relationships and class hierarchies"
+  },
+  {
+    "kc_id": 4,
+    "kc_name": "Polymorphism",
+    "description": "Understanding polymorphic behavior and method overriding"
+  },
+  {
+    "kc_id": 5,
+    "kc_name": "Encapsulation",
+    "description": "Data hiding and controlling access to class members"
+  },
+  {
+    "kc_id": 6,
+    "kc_name": "Access Modifiers",
+    "description": "Understanding and applying different access modifiers"
+  }
+]

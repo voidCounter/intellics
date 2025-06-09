@@ -1,0 +1,48 @@
+[
+  {
+    "scaffold_id": 1,
+    "question_id": 1,
+    "question_text": "What is a class in programming?",
+    "scaffold_type": "multiple_choice",
+    "options": [
+      "A blueprint for creating objects",
+      "A type of variable",
+      "A function that returns an object",
+      "A collection of data"
+    ],
+    "correct_answer": "A blueprint for creating objects"
+  },
+  {
+    "scaffold_id": 2,
+    "question_id": 2,
+    "question_text": "What is an object in programming?",
+    "scaffold_type": "multiple_choice",
+    "options": [
+      "An instance of a class",
+      "A type of function",
+      "A variable that holds data",
+      "A method in a class"
+    ],
+    "correct_answer": "An instance of a class"
+  },
+  {
+    "scaffold_id": 3,
+    "question_id": 3,
+    "question_text": "If a class is like a cookie cutter, what would an object be like?",
+    "scaffold_type": "multiple_choice",
+    "options": [
+      "The dough",
+      "The actual cookie made from the cutter",
+      "The oven",
+      "The recipe"
+    ],
+    "correct_answer": "The actual cookie made from the cutter"
+  },
+  {
+    "scaffold_id": 4,
+    "question_id": 5,
+    "question_text": "Can you think of a real-world example where the same action produces different results depending on the object?",
+    "scaffold_type": "written_answer",
+    "correct_answer": "Examples include: pressing the brake pedal in different vehicles (car vs motorcycle), or the 'play' button on different devices (TV vs radio vs phone)."
+  }
+]

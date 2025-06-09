@@ -1,0 +1,126 @@
+[
+  {
+    "question_id": 1,
+    "lesson_id": 1,
+    "question_text": "What is the main purpose of a class in Object-Oriented Programming?",
+    "question_type": "multiple_choice",
+    "options": [
+      "To store data in a database",
+      "To serve as a blueprint or template for creating objects",
+      "To execute functions in sequence",
+      "To handle user input"
+    ],
+    "scaffolds": [
+      {
+        "scaffold_id": 1,
+        "question_id": 1,
+        "scaffold_text": "If a class is like a cookie cutter, what would an object be like?",
+        "scaffold_type": "multiple_choice",
+        "options": [
+          "The dough",
+          "The actual cookie made from the cutter",
+          "The oven",
+          "The recipe"
+        ],
+        "correct_answer": "The actual cookie made from the cutter"
+      },
+      {
+        "scaffold_id": 2,
+        "question_id": 1,
+        "scaffold_text": "Can you think of a real-world example where the same action produces different results depending on the object?",
+        "scaffold_type": "written_answer",
+        "correct_answer": "Examples include: pressing the brake pedal in different vehicles (car vs motorcycle), or the 'play' button on different devices (TV vs radio vs phone)."
+      }
+    ],
+    "correct_answer": "To serve as a blueprint or template for creating objects",
+    "hint_level_1": "Think about what a class defines for the objects that will be created from it.",
+    "hint_level_2": "A class is like a blueprint that specifies the structure and behavior of objects."
+  },
+  {
+    "question_id": 2,
+    "lesson_id": 1,
+    "question_text": "Which keyword is used to create an object from a class in Java?",
+    "question_type": "multiple_choice",
+    "options": [
+      "create",
+      "new",
+      "make",
+      "build"
+    ],
+    "correct_answer": "new",
+    "hint_level_1": "This keyword allocates memory for a new instance of a class.",
+    "hint_level_2": "It's a three-letter word that comes before the class constructor call."
+  },
+  {
+    "question_id": 3,
+    "lesson_id": 1,
+    "question_text": "Explain the difference between a class and an object.",
+    "question_type": "written_answer",
+    "correct_answer": "A class is a blueprint or template that defines the structure and behavior of objects, while an object is an actual instance of a class with specific values assigned to its attributes.",
+    "hint_level_1": "Think about the relationship between a blueprint and a house built from that blueprint.",
+    "hint_level_2": "One is abstract (the template), the other is concrete (the actual thing created from the template).",
+    "scaffolds": [
+      {
+        "scaffold_id": 3,
+        "question_id": 3,
+        "scaffold_text": "If a class is like a cookie cutter, what would an object be like?",
+        "scaffold_type": "multiple_choice",
+        "options": [
+          "The dough",
+          "The actual cookie made from the cutter",
+          "The oven",
+          "The recipe"
+        ],
+        "correct_answer": "The actual cookie made from the cutter"
+      }
+    ]
+  },
+  {
+    "question_id": 4,
+    "lesson_id": 2,
+    "question_text": "What is inheritance in Object-Oriented Programming?",
+    "question_type": "multiple_choice",
+    "options": [
+      "The process of creating multiple objects from a class",
+      "A mechanism where one class acquires properties and methods from another class",
+      "The ability to hide implementation details",
+      "The process of converting one data type to another"
+    ],
+    "correct_answer": "A mechanism where one class acquires properties and methods from another class",
+    "hint_level_1": "Think about how children inherit traits from their parents.",
+    "hint_level_2": "It's about one class getting features from another class to avoid code duplication."
+  },
+  {
+    "question_id": 5,
+    "lesson_id": 2,
+    "question_text": "What does polymorphism mean in the context of OOP?",
+    "question_type": "written_answer",
+    "correct_answer": "Polymorphism means 'many forms' and refers to the ability of objects of different types to be treated as objects of a common base type, while still maintaining their specific behavior.",
+    "hint_level_1": "The word comes from Greek meaning 'many forms'.",
+    "hint_level_2": "It allows the same interface to be used for different underlying data types or classes.",
+    "scaffolds": [
+      {
+        "scaffold_id": 4,
+        "question_id": 5,
+        "scaffold_text": "Can you think of a real-world example where the same action produces different results depending on the object?",
+        "scaffold_type": "written_answer",
+        "correct_answer": "Examples include: pressing the brake pedal in different vehicles (car vs motorcycle), or the 'play' button on different devices (TV vs radio vs phone)."
+      }
+    ]
+  },
+  {
+    "question_id": 6,
+    "lesson_id": 3,
+    "question_text": "Which access modifier restricts access to only within the same class?",
+    "question_type": "multiple_choice",
+    "options": [
+      "public",
+      "protected",
+      "private",
+      "default"
+    ],
+    "correct_answer": "private",
+    "hint_level_1": "This modifier provides the most restrictive access level.",
+    "hint_level_2": "It's the opposite of 'public' - it keeps things hidden within the class."
+  }
+]
