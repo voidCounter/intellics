@@ -43,6 +43,17 @@ export function QuestionCard({
     currentLesson
   } = useAppStore();
 
+  // Return loading state if question is undefined
+  if (!question) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardContent className="flex items-center justify-center p-8">
+          <p className="text-gray-600">Loading question...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [writtenAnswer, setWrittenAnswer] = useState('');
   const [showHint1, setShowHint1] = useState(false);

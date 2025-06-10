@@ -76,6 +76,12 @@ export default function LessonPageClient() {
 
     const handleStartQuiz = () => {
         if (lessonQuestions.length > 0) {
+            // Log quiz start
+            addInteraction({
+                interaction_type: 'start_test',
+                lesson_id: currentLesson?.lesson_id
+            });
+
             setShowQuiz(true);
             setCurrentQuestionIndex(0);
             setQuizResults([]);
