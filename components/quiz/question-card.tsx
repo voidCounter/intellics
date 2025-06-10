@@ -43,6 +43,16 @@ export function QuestionCard({
     currentLesson
   } = useAppStore();
 
+  const [selectedAnswer, setSelectedAnswer] = useState('');
+  const [writtenAnswer, setWrittenAnswer] = useState('');
+  const [showHint1, setShowHint1] = useState(false);
+  const [showHint2, setShowHint2] = useState(false);
+
+  // State for scaffolding accordion
+  const [showScaffoldContainer, setShowScaffoldContainer] = useState(false);
+  const [activeScaffoldValue, setActiveScaffoldValue] = useState<string | undefined>(undefined);
+  const [unlockedScaffoldIndex, setUnlockedScaffoldIndex] = useState(0);
+
   // Return loading state if question is undefined
   if (!question) {
     return (
@@ -53,16 +63,6 @@ export function QuestionCard({
       </Card>
     );
   }
-
-  const [selectedAnswer, setSelectedAnswer] = useState('');
-  const [writtenAnswer, setWrittenAnswer] = useState('');
-  const [showHint1, setShowHint1] = useState(false);
-  const [showHint2, setShowHint2] = useState(false);
-
-  // State for scaffolding accordion
-  const [showScaffoldContainer, setShowScaffoldContainer] = useState(false);
-  const [activeScaffoldValue, setActiveScaffoldValue] = useState<string | undefined>(undefined);
-  const [unlockedScaffoldIndex, setUnlockedScaffoldIndex] = useState(0);
 
   const scaffolds = question.scaffolds || [];
 
@@ -90,6 +90,18 @@ export function QuestionCard({
     }
     // Call onSubmit for both correct and incorrect answers
     onSubmit(answer, isCorrect);
+  };
+
+  const handleSkip = () => {
+    // Log skip interaction
+    addInteraction({
+      interaction_type: 'skip_question',
+      question_id: question.question_id,
+      lesson_id: currentLesson?.lesson_id
+    });
+
+    // Call onSubmit with empty answer to move to next question
+    onSubmit('', true);
   };
 
   const handleHint = (level: number) => {
@@ -285,7 +297,13 @@ export function QuestionCard({
           )}
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            onClick={handleSkip}
+          >
+            Skip
+          </Button>
           <Button
             onClick={handleSubmit}
             disabled={!canSubmit}

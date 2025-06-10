@@ -21,7 +21,7 @@ export interface Interaction {
   interaction_id: string;
   user_id: number;
   session_id: string;
-  interaction_type: 'lesson_start' | 'lesson_exit' | 'start_test' | 'test_exit' | 'question_submit' | 'hint_request' | 'scaffold_answer' | 'scaffold_request';
+  interaction_type: 'lesson_start' | 'lesson_exit' | 'start_test' | 'test_exit' | 'question_submit' | 'hint_request' | 'scaffold_answer' | 'scaffold_request' | 'skip_question';
   lesson_id?: number;
   question_id?: number;
   scaffold_id?: number;

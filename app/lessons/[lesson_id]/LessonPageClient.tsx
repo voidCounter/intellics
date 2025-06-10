@@ -94,44 +94,52 @@ export default function LessonPageClient() {
         const currentQuestion = lessonQuestions[currentQuestionIndex];
         if (!currentQuestion) return;
 
-        // Update mastery for both correct and incorrect answers
-        updateKCMastery(1, isCorrect); // Using KC 1 as example
+        // Only update mastery and add to results if it's a submission (not a skip)
+        if (answer !== '') {
+            // Update mastery for both correct and incorrect answers
+            updateKCMastery(1, isCorrect); // Using KC 1 as example
 
-        // Count hints used for this question
-        const hintsUsed = Array.from(usedHints).filter(hint =>
-            hint.startsWith(`${currentQuestion.question_id}-`)
-        ).length;
+            // Count hints used for this question
+            const hintsUsed = Array.from(usedHints).filter(hint =>
+                hint.startsWith(`${currentQuestion.question_id}-`)
+            ).length;
 
-        // Add to results
-        const result: QuizResult = {
-            questionId: currentQuestion.question_id,
-            questionText: currentQuestion.question_text,
-            userAnswer: answer,
-            correctAnswer: currentQuestion.correct_answer,
-            isCorrect,
-            hintsUsed,
-            scaffoldUsed: false // Track this properly in real implementation
-        };
+            // Add to results
+            const result: QuizResult = {
+                questionId: currentQuestion.question_id,
+                questionText: currentQuestion.question_text,
+                userAnswer: answer,
+                correctAnswer: currentQuestion.correct_answer,
+                isCorrect,
+                hintsUsed,
+                scaffoldUsed: false // Track this properly in real implementation
+            };
 
-        const newResults = [...quizResults, result];
-        setQuizResults(newResults);
+            const newResults = [...quizResults, result];
+            setQuizResults(newResults);
 
-        // Log question submission for both correct and incorrect answers
-        addInteraction({
-            interaction_type: 'question_submit',
-            question_id: currentQuestion.question_id,
-            lesson_id: currentLesson?.lesson_id,
-            student_answer: answer,
-            is_correct: isCorrect,
-            hint_level: hintsUsed
-        });
+            // Log question submission for both correct and incorrect answers
+            addInteraction({
+                interaction_type: 'question_submit',
+                question_id: currentQuestion.question_id,
+                lesson_id: currentLesson?.lesson_id,
+                student_answer: answer,
+                is_correct: isCorrect,
+                hint_level: hintsUsed
+            });
+        }
 
-        // Only move to next question if answer is correct
-        if (isCorrect) {
+        // Move to next question if answer is correct or if it was a skip
+        if (isCorrect || answer === '') {
             if (currentQuestionIndex < lessonQuestions.length - 1) {
                 setCurrentQuestionIndex(currentQuestionIndex + 1);
                 startTimer(); // Reset timer for next question
             } else {
+                // Log end of test
+                addInteraction({
+                    interaction_type: 'test_exit',
+                    lesson_id: currentLesson?.lesson_id
+                });
                 // Quiz complete
                 setShowResults(true);
                 setShowQuiz(false);

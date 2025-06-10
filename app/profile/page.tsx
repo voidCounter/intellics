@@ -36,9 +36,15 @@ export default function ProfilePage() {
   }
 
   const totalInteractions = interactions.length;
-  const correctAnswers = interactions.filter(i => i.is_correct === true).length;
-  const accuracy = totalInteractions > 0 ? Math.round((correctAnswers / totalInteractions) * 100) : 0;
+
+  // Calculate accuracy only from question submissions
+  const questionSubmissions = interactions.filter(i => i.interaction_type === 'question_submit');
+  const correctAnswers = questionSubmissions.filter(i => i.is_correct === true).length;
+  const accuracy = questionSubmissions.length > 0 ? Math.round((correctAnswers / questionSubmissions.length) * 100) : 0;
+
+  // Count hints and scaffolds used
   const hintsUsed = interactions.filter(i => i.interaction_type === 'hint_request').length;
+  const scaffoldsUsed = interactions.filter(i => i.interaction_type === 'scaffold_request').length;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -56,7 +62,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Interactions</CardTitle>
@@ -74,6 +80,9 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{accuracy}%</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {correctAnswers} correct out of {questionSubmissions.length} submissions
+            </p>
           </CardContent>
         </Card>
 
@@ -89,6 +98,16 @@ export default function ProfilePage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Scaffolds Used</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{scaffoldsUsed}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Mastery</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -98,6 +117,9 @@ export default function ProfilePage() {
                 ? Math.round((kcMasteries.reduce((sum, kc) => sum + kc.p_mastery, 0) / kcMasteries.length) * 100)
                 : 0}%
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Average across {kcMasteries.length} knowledge components
+            </p>
           </CardContent>
         </Card>
       </div>

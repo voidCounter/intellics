@@ -2,6 +2,7 @@
   {
     "question_id": 1,
     "lesson_id": 1,
+    "kc_id": 1,
     "question_text": "What is the main purpose of a class in Object-Oriented Programming?",
     "question_type": "multiple_choice",
     "options": [
@@ -39,6 +40,7 @@
   {
     "question_id": 2,
     "lesson_id": 1,
+    "kc_id": 2,
     "question_text": "Which keyword is used to create an object from a class in Java?",
     "question_type": "multiple_choice",
     "options": [
@@ -54,6 +56,7 @@
   {
     "question_id": 3,
     "lesson_id": 1,
+    "kc_id": 1,
     "question_text": "Explain the difference between a class and an object.",
     "question_type": "written_answer",
     "correct_answer": "A class is a blueprint or template that defines the structure and behavior of objects, while an object is an actual instance of a class with specific values assigned to its attributes.",
@@ -78,6 +81,7 @@
   {
     "question_id": 4,
     "lesson_id": 2,
+    "kc_id": 3,
     "question_text": "What is inheritance in Object-Oriented Programming?",
     "question_type": "multiple_choice",
     "options": [
@@ -93,6 +97,7 @@
   {
     "question_id": 5,
     "lesson_id": 2,
+    "kc_id": 4,
     "question_text": "What does polymorphism mean in the context of OOP?",
     "question_type": "written_answer",
     "correct_answer": "Polymorphism means 'many forms' and refers to the ability of objects of different types to be treated as objects of a common base type, while still maintaining their specific behavior.",
@@ -111,6 +116,7 @@
   {
     "question_id": 6,
     "lesson_id": 3,
+    "kc_id": 6,
     "question_text": "Which access modifier restricts access to only within the same class?",
     "question_type": "multiple_choice",
     "options": [
