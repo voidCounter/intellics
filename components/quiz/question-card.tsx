@@ -39,15 +39,8 @@ export function QuestionCard({
   totalQuestions
 }: QuestionCardProps) {
   const {
-    showScaffold,
-    setShowScaffold,
-    startScaffold,
-    handleScaffoldAnswer,
-    currentScaffolds,
-    currentScaffoldIndex,
-    nextScaffold,
-    usedHints: appUsedHints,
-    requestHint
+    addInteraction,
+    currentLesson
   } = useAppStore();
 
   const [selectedAnswer, setSelectedAnswer] = useState('');
@@ -56,14 +49,22 @@ export function QuestionCard({
   const [showHint2, setShowHint2] = useState(false);
 
   // State for scaffolding accordion
-  const [showScaffoldContainer, setShowScaffoldContainer] = useState(true);
+  const [showScaffoldContainer, setShowScaffoldContainer] = useState(false);
   const [activeScaffoldValue, setActiveScaffoldValue] = useState<string | undefined>(undefined);
   const [unlockedScaffoldIndex, setUnlockedScaffoldIndex] = useState(0);
-  const [hasCalledOnScaffoldForQuestion, setHasCalledOnScaffoldForQuestion] = useState(false);
+
+  // Return loading state if question is undefined
+  if (!question) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardContent className="flex items-center justify-center p-8">
+          <p className="text-gray-600">Loading question...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const scaffolds = question.scaffolds || [];
-
-  const currentScaffold = currentScaffolds[currentScaffoldIndex];
 
   useEffect(() => {
     // Reset state when question changes
@@ -74,28 +75,33 @@ export function QuestionCard({
     setShowScaffoldContainer(false);
     setActiveScaffoldValue(undefined);
     setUnlockedScaffoldIndex(0);
-    setHasCalledOnScaffoldForQuestion(false);
   }, [question.question_id]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (showScaffold) {
-      handleScaffoldAnswer(selectedAnswer || writtenAnswer);
-      setSelectedAnswer('');
-      setWrittenAnswer('');
-    } else {
-      const answer = question.question_type === 'multiple_choice' ? selectedAnswer : writtenAnswer;
-      if (!answer.trim()) return;
-      const isCorrect = answer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
+    const answer = question.question_type === 'multiple_choice' ? selectedAnswer : writtenAnswer;
+    if (!answer.trim()) return;
+    const isCorrect = answer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
 
-      if (isCorrect) {
-        toast.success("Correct! Great job! Moving to the next question.");
-      } else {
-        toast.error("Incorrect. That's not quite right. Try again!");
-      }
-      // Call onSubmit for both correct and incorrect answers
-      onSubmit(answer, isCorrect);
+    if (isCorrect) {
+      toast.success("Correct! Great job! Moving to the next question.");
+    } else {
+      toast.error("Incorrect. That's not quite right. Try again!");
     }
+    // Call onSubmit for both correct and incorrect answers
+    onSubmit(answer, isCorrect);
+  };
+
+  const handleSkip = () => {
+    // Log skip interaction
+    addInteraction({
+      interaction_type: 'skip_question',
+      question_id: question.question_id,
+      lesson_id: currentLesson?.lesson_id
+    });
+
+    // Call onSubmit with empty answer to move to next question
+    onSubmit('', true);
   };
 
   const handleHint = (level: number) => {
@@ -105,16 +111,24 @@ export function QuestionCard({
   };
 
   const handleStartScaffold = () => {
-    startScaffold(question.question_id);
     setShowHint1(false);
     setShowHint2(false);
-    setShowScaffoldContainer(false);
+    setShowScaffoldContainer(true);
     setActiveScaffoldValue(undefined);
     setUnlockedScaffoldIndex(0);
-    setHasCalledOnScaffoldForQuestion(false);
   };
 
   const handleScaffoldSubmit = (scaffoldData: Scaffold, answer: string, isCorrect: boolean, scaffoldIndex: number) => {
+    // Log scaffold answer
+    addInteraction({
+      interaction_type: 'scaffold_answer',
+      scaffold_id: scaffoldData.scaffold_id,
+      question_id: scaffoldData.question_id,
+      lesson_id: currentLesson?.lesson_id,
+      student_answer: answer,
+      is_correct: isCorrect
+    });
+
     if (isCorrect) {
       toast.success("Correct! Great job! Moving to the next step.");
       setUnlockedScaffoldIndex(prev => Math.max(prev, scaffoldIndex + 1));
@@ -130,12 +144,22 @@ export function QuestionCard({
     }
   };
 
+  const handleScaffoldView = (scaffoldId: number) => {
+    // Log scaffold view
+    addInteraction({
+      interaction_type: 'scaffold_request',
+      scaffold_id: scaffoldId,
+      question_id: question.question_id,
+      lesson_id: currentLesson?.lesson_id
+    });
+  };
+
   const canSubmit = question.question_type === 'multiple_choice'
     ? selectedAnswer !== ''
     : writtenAnswer.trim() !== '';
 
-  const hint1Used = appUsedHints.has(`${question.question_id}-1`);
-  const hint2Used = appUsedHints.has(`${question.question_id}-2`);
+  const hint1Used = usedHints.has(`${question.question_id}-1`);
+  const hint2Used = usedHints.has(`${question.question_id}-2`);
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -241,7 +265,13 @@ export function QuestionCard({
               collapsible
               className="w-full mt-4"
               value={activeScaffoldValue}
-              onValueChange={setActiveScaffoldValue}
+              onValueChange={(value) => {
+                setActiveScaffoldValue(value);
+                if (value) {
+                  const scaffoldIndex = parseInt(value.split('-')[1]);
+                  handleScaffoldView(scaffolds[scaffoldIndex].scaffold_id);
+                }
+              }}
             >
               {scaffolds.map((scaffold, idx) => (
                 <AccordionItem
@@ -256,7 +286,7 @@ export function QuestionCard({
                     <ScaffoldCard
                       scaffold={scaffold}
                       onSubmit={(answer, isCorrect) => handleScaffoldSubmit(scaffold, answer, isCorrect, idx)}
-                      onClose={() => setActiveScaffoldValue(undefined)} // Allows ScaffoldCard to close itself
+                      onClose={() => setActiveScaffoldValue(undefined)}
                       scaffoldNumber={idx + 1}
                       totalScaffolds={scaffolds.length}
                     />
@@ -267,7 +297,13 @@ export function QuestionCard({
           )}
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            onClick={handleSkip}
+          >
+            Skip
+          </Button>
           <Button
             onClick={handleSubmit}
             disabled={!canSubmit}

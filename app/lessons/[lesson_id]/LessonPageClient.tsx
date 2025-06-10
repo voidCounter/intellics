@@ -13,7 +13,6 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, TestTube, CheckCircle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { QuestionCard } from '@/components/quiz/question-card';
-import { ScaffoldCard } from '@/components/quiz/scaffold-card';
 import { QuizResults } from '@/components/quiz/quiz-results';
 import { Lesson, Question } from '@/lib/store';
 import { useLessonTracking } from '@/lib/hooks/useLessonTracking';
@@ -44,12 +43,6 @@ export default function LessonPageClient() {
         addInteraction,
         updateKCMastery,
         requestHint,
-        startScaffold,
-        currentScaffolds,
-        currentScaffoldIndex,
-        showScaffold,
-        setShowScaffold,
-        nextScaffold,
         usedHints,
         startTimer,
         getTimeSpent,
@@ -83,6 +76,12 @@ export default function LessonPageClient() {
 
     const handleStartQuiz = () => {
         if (lessonQuestions.length > 0) {
+            // Log quiz start
+            addInteraction({
+                interaction_type: 'start_test',
+                lesson_id: currentLesson?.lesson_id
+            });
+
             setShowQuiz(true);
             setCurrentQuestionIndex(0);
             setQuizResults([]);
@@ -95,59 +94,56 @@ export default function LessonPageClient() {
         const currentQuestion = lessonQuestions[currentQuestionIndex];
         if (!currentQuestion) return;
 
-        // Update mastery for both correct and incorrect answers
-        updateKCMastery(1, isCorrect); // Using KC 1 as example
+        // Only update mastery and add to results if it's a submission (not a skip)
+        if (answer !== '') {
+            // Update mastery for both correct and incorrect answers
+            updateKCMastery(1, isCorrect); // Using KC 1 as example
 
-        // Count hints used for this question
-        const hintsUsed = Array.from(usedHints).filter(hint =>
-            hint.startsWith(`${currentQuestion.question_id}-`)
-        ).length;
+            // Count hints used for this question
+            const hintsUsed = Array.from(usedHints).filter(hint =>
+                hint.startsWith(`${currentQuestion.question_id}-`)
+            ).length;
 
-        // Add to results
-        const result: QuizResult = {
-            questionId: currentQuestion.question_id,
-            questionText: currentQuestion.question_text,
-            userAnswer: answer,
-            correctAnswer: currentQuestion.correct_answer,
-            isCorrect,
-            hintsUsed,
-            scaffoldUsed: false // Track this properly in real implementation
-        };
+            // Add to results
+            const result: QuizResult = {
+                questionId: currentQuestion.question_id,
+                questionText: currentQuestion.question_text,
+                userAnswer: answer,
+                correctAnswer: currentQuestion.correct_answer,
+                isCorrect,
+                hintsUsed,
+                scaffoldUsed: false // Track this properly in real implementation
+            };
 
-        const newResults = [...quizResults, result];
-        setQuizResults(newResults);
+            const newResults = [...quizResults, result];
+            setQuizResults(newResults);
 
-        // Log question submission for both correct and incorrect answers
-        addInteraction({
-            interaction_type: 'question_submit',
-            question_id: currentQuestion.question_id,
-            lesson_id: currentLesson?.lesson_id,
-            student_answer: answer,
-            is_correct: isCorrect,
-            hint_level: hintsUsed
-        });
+            // Log question submission for both correct and incorrect answers
+            addInteraction({
+                interaction_type: 'question_submit',
+                question_id: currentQuestion.question_id,
+                lesson_id: currentLesson?.lesson_id,
+                student_answer: answer,
+                is_correct: isCorrect,
+                hint_level: hintsUsed
+            });
+        }
 
-        // Only move to next question if answer is correct
-        if (isCorrect) {
+        // Move to next question if answer is correct or if it was a skip
+        if (isCorrect || answer === '') {
             if (currentQuestionIndex < lessonQuestions.length - 1) {
                 setCurrentQuestionIndex(currentQuestionIndex + 1);
                 startTimer(); // Reset timer for next question
             } else {
+                // Log end of test
+                addInteraction({
+                    interaction_type: 'test_exit',
+                    lesson_id: currentLesson?.lesson_id
+                });
                 // Quiz complete
                 setShowResults(true);
                 setShowQuiz(false);
             }
-        }
-
-        setShowScaffold(false);
-    };
-
-    const handleScaffoldSubmit = (answer: string, isCorrect: boolean) => {
-        const currentScaffold = currentScaffolds[currentScaffoldIndex];
-        if (!currentScaffold) return;
-
-        if (isCorrect) {
-            nextScaffold();
         }
     };
 
@@ -215,27 +211,15 @@ export default function LessonPageClient() {
                 />
             ) : showQuiz ? (
                 <div className="space-y-6">
-                    {showScaffold && currentScaffolds.length > 0 ? (
-                        <ScaffoldCard
-                            scaffold={currentScaffolds[currentScaffoldIndex]}
-                            onSubmit={handleScaffoldSubmit}
-                            onClose={() => setShowScaffold(false)}
-                            scaffoldNumber={currentScaffoldIndex + 1}
-                            totalScaffolds={currentScaffolds.length}
-                        />
-                    ) : (
-                        lessonQuestions[currentQuestionIndex] && (
-                            <QuestionCard
-                                question={lessonQuestions[currentQuestionIndex]}
-                                onSubmit={handleQuestionSubmit}
-                                onHint={(level) => requestHint(lessonQuestions[currentQuestionIndex].question_id, level)}
-                                onScaffold={() => startScaffold(lessonQuestions[currentQuestionIndex].question_id)}
-                                usedHints={usedHints}
-                                questionNumber={currentQuestionIndex + 1}
-                                totalQuestions={lessonQuestions.length}
-                            />
-                        )
-                    )}
+                    <QuestionCard
+                        question={lessonQuestions[currentQuestionIndex]}
+                        onSubmit={handleQuestionSubmit}
+                        onHint={(level) => requestHint(lessonQuestions[currentQuestionIndex].question_id, level)}
+                        onScaffold={() => { }}
+                        usedHints={usedHints}
+                        questionNumber={currentQuestionIndex + 1}
+                        totalQuestions={lessonQuestions.length}
+                    />
                 </div>
             ) : (
                 <>
