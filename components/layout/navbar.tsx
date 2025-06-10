@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Brain, Home, User } from 'lucide-react';
+import Image from 'next/image';
+import { Home, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function Navbar() {
@@ -10,10 +11,16 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center space-x-2">
-            <Brain className="h-8 w-8 text-blue-600" />
-            <span className="text-xl font-bold text-gray-900">Intellics</span>
+            <Image
+              src="/logo.svg"
+              alt="IntelliCS Logo"
+              width={32}
+              height={32}
+              className="text-[#2463eb]"
+            />
+            <span className="text-xl font-bold text-[#2463eb]">IntelliCS</span>
           </Link>
-          
+
           <div className="flex items-center space-x-4">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/" className="flex items-center space-x-2">
