@@ -6,9 +6,9 @@ import { Navbar } from '@/components/layout/navbar';
 import { SessionProvider } from '@/components/providers/session-provider';
 
 const ibmPlexSans = IBM_Plex_Sans({
-  weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
-  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-ibm-plex-sans',
 });
 
 export const metadata: Metadata = {
@@ -22,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={ibmPlexSans.className}>
+    <html lang="en" className={ibmPlexSans.variable}>
+      <body className="font-sans">
         <SessionProvider>
           <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
             <Navbar />
