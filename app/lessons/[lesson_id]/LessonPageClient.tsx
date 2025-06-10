@@ -13,7 +13,6 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, TestTube, CheckCircle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { QuestionCard } from '@/components/quiz/question-card';
-import { ScaffoldCard } from '@/components/quiz/scaffold-card';
 import { QuizResults } from '@/components/quiz/quiz-results';
 import { Lesson, Question } from '@/lib/store';
 import { useLessonTracking } from '@/lib/hooks/useLessonTracking';
@@ -44,12 +43,6 @@ export default function LessonPageClient() {
         addInteraction,
         updateKCMastery,
         requestHint,
-        startScaffold,
-        currentScaffolds,
-        currentScaffoldIndex,
-        showScaffold,
-        setShowScaffold,
-        nextScaffold,
         usedHints,
         startTimer,
         getTimeSpent,
@@ -138,17 +131,6 @@ export default function LessonPageClient() {
                 setShowQuiz(false);
             }
         }
-
-        setShowScaffold(false);
-    };
-
-    const handleScaffoldSubmit = (answer: string, isCorrect: boolean) => {
-        const currentScaffold = currentScaffolds[currentScaffoldIndex];
-        if (!currentScaffold) return;
-
-        if (isCorrect) {
-            nextScaffold();
-        }
     };
 
     const handleRetakeQuiz = () => {
@@ -215,27 +197,15 @@ export default function LessonPageClient() {
                 />
             ) : showQuiz ? (
                 <div className="space-y-6">
-                    {showScaffold && currentScaffolds.length > 0 ? (
-                        <ScaffoldCard
-                            scaffold={currentScaffolds[currentScaffoldIndex]}
-                            onSubmit={handleScaffoldSubmit}
-                            onClose={() => setShowScaffold(false)}
-                            scaffoldNumber={currentScaffoldIndex + 1}
-                            totalScaffolds={currentScaffolds.length}
-                        />
-                    ) : (
-                        lessonQuestions[currentQuestionIndex] && (
-                            <QuestionCard
-                                question={lessonQuestions[currentQuestionIndex]}
-                                onSubmit={handleQuestionSubmit}
-                                onHint={(level) => requestHint(lessonQuestions[currentQuestionIndex].question_id, level)}
-                                onScaffold={() => startScaffold(lessonQuestions[currentQuestionIndex].question_id)}
-                                usedHints={usedHints}
-                                questionNumber={currentQuestionIndex + 1}
-                                totalQuestions={lessonQuestions.length}
-                            />
-                        )
-                    )}
+                    <QuestionCard
+                        question={lessonQuestions[currentQuestionIndex]}
+                        onSubmit={handleQuestionSubmit}
+                        onHint={(level) => requestHint(lessonQuestions[currentQuestionIndex].question_id, level)}
+                        onScaffold={() => { }}
+                        usedHints={usedHints}
+                        questionNumber={currentQuestionIndex + 1}
+                        totalQuestions={lessonQuestions.length}
+                    />
                 </div>
             ) : (
                 <>

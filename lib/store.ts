@@ -104,9 +104,6 @@ interface AppState {
   currentLesson: Lesson | null;
   currentQuestionIndex: number;
   showQuiz: boolean;
-  currentScaffolds: Scaffold[];
-  currentScaffoldIndex: number;
-  showScaffold: boolean;
   usedHints: Set<string>;
   startTime: number | null;
 
@@ -121,15 +118,11 @@ interface AppState {
   setShowQuiz: (show: boolean) => void;
   setCurrentQuestionIndex: (index: number) => void;
   requestHint: (question_id: number, hint_level: number) => void;
-  startScaffold: (question_id: number) => void;
-  nextScaffold: () => void;
-  setShowScaffold: (show: boolean) => void;
   startTimer: () => void;
   getTimeSpent: () => number;
   resetQuizState: () => void;
   resetStore: () => void;
   shouldRecordLessonExit: (lesson_id: number) => boolean;
-  handleScaffoldAnswer: (answer: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -148,9 +141,6 @@ export const useAppStore = create<AppState>()(
       currentLesson: null,
       currentQuestionIndex: 0,
       showQuiz: false,
-      currentScaffolds: [],
-      currentScaffoldIndex: 0,
-      showScaffold: false,
       usedHints: new Set(),
       startTime: null,
 
@@ -265,11 +255,6 @@ export const useAppStore = create<AppState>()(
             userRes.json()
           ]);
 
-          // If questions.json is not yet updated, we might need to embed them here.
-          // However, the plan is to update questions.json directly.
-          // For now, assume questions.json will be pre-processed to include scaffolds.
-          // The component QuestionCard will use question.scaffolds directly.
-
           set({ modules, lessons, questions: rawQuestions, scaffolds: allScaffolds, kcs, user });
 
           // Initialize KC masteries if they don't exist
@@ -328,58 +313,6 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      startScaffold: (questionId: number) => {
-        const { questions } = get();
-        const question = questions.find(q => q.question_id === questionId);
-        if (!question) return;
-
-        // Log scaffold request
-        get().addInteraction({
-          interaction_type: 'scaffold_request',
-          question_id: questionId,
-          lesson_id: question.lesson_id
-        });
-
-        set({
-          currentScaffolds: question.scaffolds,
-          currentScaffoldIndex: 0,
-          showScaffold: true
-        });
-      },
-
-      handleScaffoldAnswer: (answer: string) => {
-        const { currentScaffolds, currentScaffoldIndex, currentLesson } = get();
-        const currentScaffold = currentScaffolds[currentScaffoldIndex];
-        if (!currentScaffold) return;
-
-        const isCorrect = answer.toLowerCase() === currentScaffold.correct_answer.toLowerCase();
-
-        // Log scaffold answer
-        get().addInteraction({
-          interaction_type: 'scaffold_answer',
-          scaffold_id: currentScaffold.scaffold_id,
-          question_id: currentScaffold.question_id,
-          lesson_id: currentLesson?.lesson_id,
-          student_answer: answer,
-          is_correct: isCorrect
-        });
-
-        if (isCorrect) {
-          get().nextScaffold();
-        }
-      },
-
-      nextScaffold: () => {
-        const state = get();
-        if (state.currentScaffoldIndex < state.currentScaffolds.length - 1) {
-          set({ currentScaffoldIndex: state.currentScaffoldIndex + 1 });
-        } else {
-          set({ showScaffold: false });
-        }
-      },
-
-      setShowScaffold: (show) => set({ showScaffold: show }),
-
       startTimer: () => set({ startTime: Date.now() }),
 
       getTimeSpent: () => {
@@ -390,9 +323,6 @@ export const useAppStore = create<AppState>()(
       resetQuizState: () => set({
         currentQuestionIndex: 0,
         showQuiz: false,
-        currentScaffolds: [],
-        currentScaffoldIndex: 0,
-        showScaffold: false,
         usedHints: new Set(),
         startTime: null
       }),
@@ -411,9 +341,6 @@ export const useAppStore = create<AppState>()(
           currentLesson: null,
           currentQuestionIndex: 0,
           showQuiz: false,
-          currentScaffolds: [],
-          currentScaffoldIndex: 0,
-          showScaffold: false,
           usedHints: new Set(),
           startTime: null
         });
