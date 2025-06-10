@@ -96,9 +96,6 @@ export default function LessonPageClient() {
 
         // Only update mastery and add to results if it's a submission (not a skip)
         if (answer !== '') {
-            // Update mastery for both correct and incorrect answers
-            updateKCMastery(1, isCorrect); // Using KC 1 as example
-
             // Count hints used for this question
             const hintsUsed = Array.from(usedHints).filter(hint =>
                 hint.startsWith(`${currentQuestion.question_id}-`)
