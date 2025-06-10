@@ -60,13 +60,14 @@ export interface Lesson {
 export interface Question {
   question_id: number;
   lesson_id: number;
+  kc_id: number;
   question_text: string;
   question_type: 'multiple_choice' | 'written_answer';
   options?: string[];
   correct_answer: string;
   hint_level_1?: string;
   hint_level_2?: string;
-  scaffolds?: Scaffold[]; // Added this line
+  scaffolds?: Scaffold[];
 }
 
 export interface Scaffold {
@@ -113,7 +114,7 @@ interface AppState {
   endSession: () => void;
   loadData: () => void;
   addInteraction: (interaction: Omit<Interaction, 'interaction_id' | 'user_id' | 'timestamp' | 'session_id'>) => void;
-  updateKCMastery: (kc_id: number, correct: boolean) => void;
+  updateKCMastery: (kc_id: number, response_type: 'correct_final_answer' | 'incorrect_final_answer' | 'hint_used' | 'scaffold_used' | 'scaffold_answer_correct' | 'scaffold_answer_incorrect' | 'skipped') => void;
   setCurrentLesson: (lesson: Lesson | null) => void;
   setShowQuiz: (show: boolean) => void;
   setCurrentQuestionIndex: (index: number) => void;
@@ -217,6 +218,30 @@ export const useAppStore = create<AppState>()(
           formatted_time: formatTimestamp(timestamp)
         });
         set({ interactions: [...state.interactions, interaction] });
+
+        // Update KC mastery based on interaction type
+        if (interactionData.question_id) {
+          const question = state.questions.find(q => q.question_id === interactionData.question_id);
+          if (question?.kc_id) {
+            switch (interactionData.interaction_type) {
+              case 'question_submit':
+                get().updateKCMastery(question.kc_id, interactionData.is_correct ? 'correct_final_answer' : 'incorrect_final_answer');
+                break;
+              case 'hint_request':
+                get().updateKCMastery(question.kc_id, 'hint_used');
+                break;
+              case 'scaffold_request':
+                get().updateKCMastery(question.kc_id, 'scaffold_used');
+                break;
+              case 'scaffold_answer':
+                get().updateKCMastery(question.kc_id, interactionData.is_correct ? 'scaffold_answer_correct' : 'scaffold_answer_incorrect');
+                break;
+              case 'skip_question':
+                get().updateKCMastery(question.kc_id, 'skipped');
+                break;
+            }
+          }
+        }
       },
 
       shouldRecordLessonExit: (lesson_id: number) => {
@@ -276,21 +301,98 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      updateKCMastery: (kc_id, correct) => {
+      updateKCMastery: (kc_id: number, response_type: 'correct_final_answer' | 'incorrect_final_answer' | 'hint_used' | 'scaffold_used' | 'scaffold_answer_correct' | 'scaffold_answer_incorrect' | 'skipped') => {
         const state = get();
         const masteries = [...state.kcMasteries];
         const masteryIndex = masteries.findIndex(m => m.kc_id === kc_id);
 
         if (masteryIndex >= 0) {
           const mastery = masteries[masteryIndex];
-          // Simple BKT update logic
-          if (correct) {
-            mastery.p_mastery = Math.min(0.95, mastery.p_mastery + mastery.p_transit * (1 - mastery.p_mastery));
-          } else {
-            mastery.p_mastery = Math.max(0.05, mastery.p_mastery * (1 - mastery.p_slip));
+          let current_P_L = mastery.p_mastery;
+
+          const p_transit = mastery.p_transit;
+          const p_guess = mastery.p_guess;
+          const p_slip = mastery.p_slip;
+
+          const EPSILON = 1e-9;
+          const P_T = Math.max(EPSILON, Math.min(1 - EPSILON, p_transit));
+          const P_G = Math.max(EPSILON, Math.min(1 - EPSILON, p_guess));
+          const P_S = Math.max(EPSILON, Math.min(1 - EPSILON, p_slip));
+
+          let new_P_L = current_P_L;
+
+          switch (response_type) {
+            case 'correct_final_answer': {
+              const prob_E_given_L_correct = (1 - P_S);
+              const prob_E_given_notL_correct = P_G;
+              const numerator_correct = current_P_L * prob_E_given_L_correct;
+              const denominator_correct = numerator_correct + (1 - current_P_L) * prob_E_given_notL_correct;
+
+              let P_L_after_observation_correct = denominator_correct === 0 ?
+                current_P_L : numerator_correct / denominator_correct;
+
+              new_P_L = P_L_after_observation_correct + (1 - P_L_after_observation_correct) * P_T;
+              break;
+            }
+
+            case 'incorrect_final_answer': {
+              const prob_E_given_L_incorrect = P_S;
+              const prob_E_given_notL_incorrect = (1 - P_G);
+              const numerator_incorrect = current_P_L * prob_E_given_L_incorrect;
+              const denominator_incorrect = numerator_incorrect + (1 - current_P_L) * prob_E_given_notL_incorrect;
+
+              let P_L_after_observation_incorrect = denominator_incorrect === 0 ?
+                current_P_L : numerator_incorrect / denominator_incorrect;
+
+              new_P_L = P_L_after_observation_incorrect;
+              break;
+            }
+
+            case 'hint_used':
+            case 'scaffold_used':
+              new_P_L = current_P_L * 0.95;
+              break;
+
+            case 'scaffold_answer_correct': {
+              const prob_E_given_L_scaffold_correct = (1 - P_S);
+              const prob_E_given_notL_scaffold_correct = P_G;
+              const num_scaffold_correct = current_P_L * prob_E_given_L_scaffold_correct;
+              const den_scaffold_correct = num_scaffold_correct + (1 - current_P_L) * prob_E_given_notL_scaffold_correct;
+
+              let P_L_after_scaffold_correct = den_scaffold_correct === 0 ?
+                current_P_L : num_scaffold_correct / den_scaffold_correct;
+
+              const P_T_scaffold_gain_factor = 0.5;
+              new_P_L = P_L_after_scaffold_correct + (1 - P_L_after_scaffold_correct) * (P_T * P_T_scaffold_gain_factor);
+              break;
+            }
+
+            case 'scaffold_answer_incorrect': {
+              const prob_E_given_L_scaffold_incorrect = P_S;
+              const prob_E_given_notL_scaffold_incorrect = (1 - P_G);
+              const num_scaffold_incorrect = current_P_L * prob_E_given_L_scaffold_incorrect;
+              const den_scaffold_incorrect = num_scaffold_incorrect + (1 - current_P_L) * prob_E_given_notL_scaffold_incorrect;
+
+              let P_L_after_scaffold_incorrect = den_scaffold_incorrect === 0 ?
+                current_P_L : num_scaffold_incorrect / den_scaffold_incorrect;
+
+              new_P_L = P_L_after_scaffold_incorrect;
+              break;
+            }
+
+            case 'skipped':
+              new_P_L = current_P_L;
+              break;
+
+            default:
+              console.warn("Unknown response_type for BKT update:", response_type);
+              return;
           }
+
+          mastery.p_mastery = Math.max(EPSILON, Math.min(1 - EPSILON, new_P_L));
           mastery.last_updated = new Date().toISOString();
           masteries[masteryIndex] = mastery;
+          console.log("New mastery for ", kc_id, " ", mastery.p_mastery);
           set({ kcMasteries: masteries });
         }
       },
