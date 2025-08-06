@@ -10,11 +10,26 @@ import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.intellics.backend.domain.entities.User;
+import org.intellics.backend.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -29,9 +44,21 @@ public class JwtTokenProvider {
     @Value("${app.jwtExpirationInMs}")
     private int jwtExpirationInMs;
 
+    @Autowired
+    private UserRepository userRepository;
+
     public String generateToken(String userId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("user_id", userId);
+
+        // Fetch user roles and add them to claims
+        userRepository.findById(java.util.UUID.fromString(userId)).ifPresent(user -> {
+            List<String> roles = user.getRoles().stream()
+                .map(role -> role.getName().name())
+                .collect(Collectors.toList());
+            claims.put("roles", roles);
+            logger.info("Roles added to JWT for user {}: {}", userId, roles);
+        });
 
         logger.info("Generating JWT token for user: {}", userId);
         logger.info("Using JWT secret: {}", jwtSecret.substring(0, Math.min(20, jwtSecret.length())) + "...");
@@ -52,6 +79,10 @@ public class JwtTokenProvider {
    public String getUserIdFromJWT(String token) {
        return Jwts.parser().verifyWith(key()).build().parseSignedClaims(token).getPayload().getSubject();
    }
+
+    public List<String> getRolesFromJWT(String token) {
+        return (List<String>) Jwts.parser().verifyWith(key()).build().parseSignedClaims(token).getPayload().get("roles");
+    }
 
     public boolean validateToken(String authToken) {
         try {
