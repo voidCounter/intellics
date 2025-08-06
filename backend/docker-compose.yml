@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: intellics_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: intellics
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
