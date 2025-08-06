@@ -1,0 +1,15 @@
+spring:
+  config:
+    import: optional:classpath:secrets.yml
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+app:
+  jwtExpirationInMs: 86400000 # 24 hours
+logging:
+  level:
+    org.springframework.security: DEBUG
