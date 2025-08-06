@@ -1,6 +1,9 @@
 package org.intellics.backend.security;
 
+import org.intellics.backend.domain.entities.Role;
 import org.intellics.backend.domain.entities.User;
+import org.intellics.backend.domain.enums.RoleName;
+import org.intellics.backend.repository.RoleRepository;
 import org.intellics.backend.repository.UserRepository;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
@@ -10,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class CustomOAuth2UserService extends OidcUserService {
@@ -21,9 +26,11 @@ public class CustomOAuth2UserService extends OidcUserService {
     private static final ThreadLocal<String> currentUserId = new ThreadLocal<>();
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
 
-    public CustomOAuth2UserService(UserRepository userRepository) {
+    public CustomOAuth2UserService(UserRepository userRepository, RoleRepository roleRepository) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
     }
 
     @Override
@@ -67,6 +74,11 @@ public class CustomOAuth2UserService extends OidcUserService {
         user.setUsername(oidcUser.getAttribute("name"));
         user.setEmail(oidcUser.getAttribute("email"));
         user.setImageUrl(oidcUser.getAttribute("picture"));
+
+        Set<Role> roles = new HashSet<>();
+        roleRepository.findByName(RoleName.ROLE_USER).ifPresent(roles::add);
+        user.setRoles(roles);
+
         logger.info("Attempting to save new user with googleId: {}", user.getGoogleId());
         User savedUser = userRepository.save(user);
         logger.info("New user saved with id: {}", savedUser.getUser_id());
