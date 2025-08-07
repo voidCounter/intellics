@@ -2,8 +2,8 @@ package org.intellics.backend.config;
 
 import org.intellics.backend.domain.entities.Role;
 import org.intellics.backend.domain.enums.RoleName;
-import org.intellics.backend.repository.RoleRepository;
-import org.intellics.backend.repository.UserRepository;
+import org.intellics.backend.repositories.RoleRepository;
+import org.intellics.backend.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;

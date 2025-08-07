@@ -51,8 +51,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(authorizeRequests ->
                 authorizeRequests
                     .requestMatchers("/oauth2/**").permitAll() // Allow access to OAuth2 endpoints
-                    .requestMatchers("/api/v1/admin/**").hasRole("ADMIN") // Admin-only endpoint
-                    .requestMatchers("/api/v1/users/me").authenticated()
                     .anyRequest().authenticated()
             )
             .oauth2Login(oauth2Login ->

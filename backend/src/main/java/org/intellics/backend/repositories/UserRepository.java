@@ -1,4 +1,4 @@
-package org.intellics.backend.repository;
+package org.intellics.backend.repositories;
 
 import org.intellics.backend.domain.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;

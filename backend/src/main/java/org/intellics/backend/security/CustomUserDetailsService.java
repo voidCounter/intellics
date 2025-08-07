@@ -1,7 +1,7 @@
 package org.intellics.backend.security;
 
 import org.intellics.backend.domain.entities.User;
-import org.intellics.backend.repository.UserRepository;
+import org.intellics.backend.repositories.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
