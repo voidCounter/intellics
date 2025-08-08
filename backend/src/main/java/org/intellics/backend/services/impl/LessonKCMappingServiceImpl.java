@@ -10,6 +10,7 @@ import org.intellics.backend.mappers.LessonKCMappingMapper;
 import org.intellics.backend.repositories.LessonKCMappingRepository;
 import org.intellics.backend.repositories.LessonRepository;
 import org.intellics.backend.repositories.KnowledgeComponentRepository;
+
 import org.intellics.backend.services.LessonKCMappingService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,6 +71,8 @@ public class LessonKCMappingServiceImpl implements LessonKCMappingService {
         KnowledgeComponent kc = knowledgeComponentRepository.findById(kcId)
                 .orElseThrow(() -> new ItemNotFoundException("Knowledge component not found with id: " + kcId));
 
+        // No validation needed - Lessons are independent and can have any KCs
+
         // Check if mapping already exists
         if (lessonKCMappingRepository.existsByLessonIdAndKnowledgeComponentId(lessonId, kcId)) {
             throw new IllegalArgumentException("KC is already mapped to this lesson");
@@ -129,4 +132,6 @@ public class LessonKCMappingServiceImpl implements LessonKCMappingService {
 
         lessonKCMappingRepository.deleteById(mappingId);
     }
+
+
 }

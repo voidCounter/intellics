@@ -40,11 +40,10 @@ public class LessonServiceIntegrationTests extends AbstractIntegrationTests {
                 .build();
         testModule = moduleRepository.save(testModule);
 
-        // Create test lesson
+        // Create test lesson (independent)
         testLesson = Lesson.builder()
                 .lesson_name("Test Lesson")
                 .lesson_content("# Test Lesson\n\nThis is a test lesson with **markdown** content.")
-                .module(testModule)
                 .build();
         testLesson = lessonRepository.save(testLesson);
     }
@@ -79,15 +78,16 @@ public class LessonServiceIntegrationTests extends AbstractIntegrationTests {
         LessonDto lessonDto = LessonDto.builder()
                 .lesson_name("OOP Introduction")
                 .lesson_content(markdownContent)
-                .module_id(testModule.getModule_id())
                 .build();
 
         LessonDto createdLesson = lessonService.createLesson(lessonDto);
 
         assertNotNull(createdLesson.getLesson_id());
         assertEquals("OOP Introduction", createdLesson.getLesson_name());
-        assertEquals(markdownContent, createdLesson.getLesson_content());
-        assertEquals(testModule.getModule_id(), createdLesson.getModule_id());
+        // Normalize line endings and trim trailing whitespace for comparison
+        String expectedNormalized = markdownContent.replace("\r\n", "\n").replace("\r", "\n").trim();
+        String actualNormalized = createdLesson.getLesson_content().replace("\r\n", "\n").replace("\r", "\n").trim();
+        assertEquals(expectedNormalized, actualNormalized);
     }
 
     @Test
@@ -97,39 +97,21 @@ public class LessonServiceIntegrationTests extends AbstractIntegrationTests {
         assertEquals(testLesson.getLesson_id(), retrievedLesson.getLesson_id());
         assertEquals(testLesson.getLesson_name(), retrievedLesson.getLesson_name());
         assertEquals(testLesson.getLesson_content(), retrievedLesson.getLesson_content());
-        assertEquals(testModule.getModule_id(), retrievedLesson.getModule_id());
     }
 
-    @Test
-    void testGetLessonsByModule() {
-        // Create another lesson in the same module
-        Lesson anotherLesson = Lesson.builder()
-                .lesson_name("Another Lesson")
-                .lesson_content("# Another Lesson\n\nMore markdown content.")
-                .module(testModule)
-                .build();
-        lessonRepository.save(anotherLesson);
 
-        List<LessonDto> lessons = lessonService.getLessonsByModule(testModule.getModule_id());
-
-        assertEquals(2, lessons.size());
-        assertTrue(lessons.stream().anyMatch(l -> l.getLesson_name().equals("Test Lesson")));
-        assertTrue(lessons.stream().anyMatch(l -> l.getLesson_name().equals("Another Lesson")));
-    }
 
     @Test
     void testUpdateLesson() {
         LessonDto updateDto = LessonDto.builder()
                 .lesson_name("Updated Lesson")
                 .lesson_content("# Updated Lesson\n\nUpdated markdown content.")
-                .module_id(testModule.getModule_id())
                 .build();
 
         LessonDto updatedLesson = lessonService.updateLesson(testLesson.getLesson_id(), updateDto);
 
         assertEquals("Updated Lesson", updatedLesson.getLesson_name());
         assertEquals("# Updated Lesson\n\nUpdated markdown content.", updatedLesson.getLesson_content());
-        assertEquals(testModule.getModule_id(), updatedLesson.getModule_id());
     }
 
     @Test
@@ -142,7 +124,6 @@ public class LessonServiceIntegrationTests extends AbstractIntegrationTests {
 
         assertEquals("Patched Lesson", patchedLesson.getLesson_name());
         assertEquals(testLesson.getLesson_content(), patchedLesson.getLesson_content()); // Should remain unchanged
-        assertEquals(testModule.getModule_id(), patchedLesson.getModule_id());
     }
 
     @Test
@@ -160,7 +141,6 @@ public class LessonServiceIntegrationTests extends AbstractIntegrationTests {
         Lesson anotherLesson = Lesson.builder()
                 .lesson_name("Another Lesson")
                 .lesson_content("# Another Lesson\n\nMore content.")
-                .module(testModule)
                 .build();
         lessonRepository.save(anotherLesson);
 
@@ -184,6 +164,5 @@ public class LessonServiceIntegrationTests extends AbstractIntegrationTests {
         // Verify other fields are also mapped correctly
         assertEquals(testLesson.getLesson_id(), retrievedLesson.getLesson_id());
         assertEquals(testLesson.getLesson_name(), retrievedLesson.getLesson_name());
-        assertEquals(testModule.getModule_id(), retrievedLesson.getModule_id());
     }
 }

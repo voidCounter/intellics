@@ -6,8 +6,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import java.util.List;
 import java.util.UUID;
@@ -29,9 +27,6 @@ public class Lesson {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID lesson_id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "module_id")
-    private Module module;
     private String lesson_name;
     private String lesson_content;
     

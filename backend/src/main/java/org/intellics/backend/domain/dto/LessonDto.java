@@ -23,6 +23,4 @@ public class LessonDto {
     @NotBlank(message = "Lesson content cannot be blank")
     @Size(max = 10000, message = "Lesson content cannot exceed 10000 characters")
     private String lesson_content;
-    
-    private UUID module_id;
 }

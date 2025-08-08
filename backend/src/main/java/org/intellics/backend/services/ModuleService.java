@@ -21,5 +21,5 @@ public interface ModuleService {
     void removeKnowledgeComponentFromModule(UUID moduleId, UUID kcId);
     void removeAllKnowledgeComponentsFromModule(UUID moduleId);
     org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentPrerequisiteDto createAndAddKnowledgeComponentToModule(UUID moduleId, KnowledgeComponentCreateDto kcCreateDto);
-    List<LessonDto> getLessonsByModule(UUID moduleId);
+    LessonDto createLessonForModule(UUID moduleId, LessonDto lessonDto);
 }

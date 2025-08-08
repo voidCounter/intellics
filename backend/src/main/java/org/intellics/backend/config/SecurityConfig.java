@@ -52,6 +52,10 @@ public class SecurityConfig {
                 authorizeRequests
                     .requestMatchers("/oauth2/**").permitAll() // Allow access to OAuth2 endpoints
                     .requestMatchers("/actuator/**").permitAll() // Allow access to actuator endpoints
+                    .requestMatchers("/api-docs/**").permitAll() // Allow access to Swagger endpoints
+                    .requestMatchers("/swagger-ui/**").permitAll() // Allow access to Swagger UI
+                    .requestMatchers("/swagger-ui.html").permitAll() // Allow access to Swagger UI
+                    .requestMatchers("/v3/api-docs/**").permitAll() // Allow access to OpenAPI docs
                     .anyRequest().authenticated()
             )
             .oauth2Login(oauth2Login ->

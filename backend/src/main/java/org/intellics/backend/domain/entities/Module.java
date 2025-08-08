@@ -27,9 +27,6 @@ public class Module {
     
     private String module_name;
     private String description;
-    
-    @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Lesson> lessons;
 
     @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ModuleKCMapping> moduleKCMappings;

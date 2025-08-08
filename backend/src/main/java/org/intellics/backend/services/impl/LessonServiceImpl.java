@@ -2,11 +2,13 @@ package org.intellics.backend.services.impl;
 
 import org.intellics.backend.api.error.exceptions.ItemNotFoundException;
 import org.intellics.backend.domain.dto.LessonDto;
+import org.intellics.backend.domain.dto.LessonWithKCsDto;
+import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentSimpleDto;
 import org.intellics.backend.domain.entities.Lesson;
-import org.intellics.backend.domain.entities.Module;
 import org.intellics.backend.mappers.Mapper;
 import org.intellics.backend.repositories.LessonRepository;
-import org.intellics.backend.repositories.ModuleRepository;
+import org.intellics.backend.services.KnowledgeComponentService;
+import org.intellics.backend.services.LessonKCMappingService;
 import org.intellics.backend.services.LessonService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,15 +22,18 @@ import java.util.stream.StreamSupport;
 public class LessonServiceImpl implements LessonService {
 
     private final LessonRepository lessonRepository;
-    private final ModuleRepository moduleRepository;
     private final Mapper<LessonDto, Lesson> lessonMapper;
+    private final LessonKCMappingService lessonKCMappingService;
+    private final KnowledgeComponentService knowledgeComponentService;
 
-    public LessonServiceImpl(LessonRepository lessonRepository, 
-                           ModuleRepository moduleRepository,
-                           Mapper<LessonDto, Lesson> lessonMapper) {
+    public LessonServiceImpl(LessonRepository lessonRepository,
+                           Mapper<LessonDto, Lesson> lessonMapper,
+                           LessonKCMappingService lessonKCMappingService,
+                           KnowledgeComponentService knowledgeComponentService) {
         this.lessonRepository = lessonRepository;
-        this.moduleRepository = moduleRepository;
         this.lessonMapper = lessonMapper;
+        this.lessonKCMappingService = lessonKCMappingService;
+        this.knowledgeComponentService = knowledgeComponentService;
     }
 
     @Override
@@ -39,21 +44,45 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
+    public LessonWithKCsDto getLessonByIdWithKCs(UUID id) {
+        // Get the lesson
+        Lesson lesson = lessonRepository.findById(id)
+                .orElseThrow(() -> new ItemNotFoundException("Lesson not found with id: " + id));
+        
+        // Get KC mappings for this lesson
+        var kcMappings = lessonKCMappingService.getKCsByLessonId(id);
+        
+        // Build the response DTO
+        LessonWithKCsDto lessonWithKCs = LessonWithKCsDto.builder()
+                .lesson_id(lesson.getLesson_id())
+                .lesson_name(lesson.getLesson_name())
+                .lesson_content(lesson.getLesson_content())
+                .knowledgeComponents(kcMappings.stream()
+                        .map(mapping -> {
+                            // Get KC details
+                            KnowledgeComponentSimpleDto kcDetails = knowledgeComponentService.findOne(mapping.getKcId())
+                                    .orElseThrow(() -> new ItemNotFoundException("Knowledge Component not found with id: " + mapping.getKcId()));
+                            return LessonWithKCsDto.LessonKCInfoDto.builder()
+                                    .kcId(mapping.getKcId())
+                                    .kcName(kcDetails.getKc_name())
+                                    .description(kcDetails.getDescription())
+                                    .targetMastery(mapping.getTargetMastery())
+                                    .build();
+                        })
+                        .collect(java.util.stream.Collectors.toList()))
+                .build();
+        
+        return lessonWithKCs;
+    }
+
+    @Override
     public List<LessonDto> getAllLessons() {
         return StreamSupport.stream(lessonRepository.findAll().spliterator(), false)
                 .map(lessonMapper::mapTo)
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public List<LessonDto> getLessonsByModule(UUID moduleId) {
-        Module module = moduleRepository.findById(moduleId)
-                .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + moduleId));
-        
-        return lessonRepository.findByModule(module).stream()
-                .map(lessonMapper::mapTo)
-                .collect(Collectors.toList());
-    }
+
 
     @Override
     @Transactional
@@ -80,13 +109,6 @@ public class LessonServiceImpl implements LessonService {
         lesson.setLesson_id(null); // Ensure ID is null for new entity
         lesson.setLesson_name(lessonName);
         lesson.setLesson_content(lessonContent);
-        
-        // Validate module exists if module_id is provided
-        if (lessonDto.getModule_id() != null) {
-            Module module = moduleRepository.findById(lessonDto.getModule_id())
-                    .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + lessonDto.getModule_id()));
-            lesson.setModule(module);
-        }
         
         Lesson savedLesson = lessonRepository.save(lesson);
         return lessonMapper.mapTo(savedLesson);
@@ -117,13 +139,6 @@ public class LessonServiceImpl implements LessonService {
             throw new IllegalArgumentException("Lesson content cannot exceed 10000 characters");
         }
         existingLesson.setLesson_content(lessonContent);
-        
-        // Update module if provided
-        if (lessonDto.getModule_id() != null) {
-            Module module = moduleRepository.findById(lessonDto.getModule_id())
-                    .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + lessonDto.getModule_id()));
-            existingLesson.setModule(module);
-        }
         
         Lesson updatedLesson = lessonRepository.save(existingLesson);
         return lessonMapper.mapTo(updatedLesson);
@@ -157,13 +172,6 @@ public class LessonServiceImpl implements LessonService {
                 throw new IllegalArgumentException("Lesson content cannot exceed 10000 characters");
             }
             existingLesson.setLesson_content(lessonContent);
-        }
-        
-        // Update module if provided
-        if (lessonDto.getModule_id() != null) {
-            Module module = moduleRepository.findById(lessonDto.getModule_id())
-                    .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + lessonDto.getModule_id()));
-            existingLesson.setModule(module);
         }
         
         Lesson patchedLesson = lessonRepository.save(existingLesson);

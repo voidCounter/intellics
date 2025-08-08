@@ -8,6 +8,19 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: 0
+
+# OpenAPI/Swagger Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    docExpansion: none
+    disable-swagger-default-url: true
+  packages-to-scan: org.intellics.backend.controller
+
 app:
   jwtExpirationInMs: 86400000 # 24 hours
 logging:

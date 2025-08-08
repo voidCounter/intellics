@@ -21,6 +21,7 @@ import org.intellics.backend.repositories.ModuleRepository;
 import org.intellics.backend.services.KnowledgeComponentService;
 import org.intellics.backend.services.LessonService;
 import org.intellics.backend.services.ModuleKCMappingService;
+import org.intellics.backend.services.ModuleLessonMappingService;
 import org.intellics.backend.services.ModuleService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ public class ModuleServiceImpl implements ModuleService {
     private final ModuleKCMappingRepository moduleKCMappingRepository;
     private final ModuleKCMappingService moduleKCMappingService;
     private final KnowledgeComponentService knowledgeComponentService;
+    private final ModuleLessonMappingService moduleLessonMappingService;
     private final LessonService lessonService;
 
     public ModuleServiceImpl(ModuleRepository moduleRepository,
@@ -40,6 +42,7 @@ public class ModuleServiceImpl implements ModuleService {
                              ModuleKCMappingRepository moduleKCMappingRepository,
                              ModuleKCMappingService moduleKCMappingService,
                              KnowledgeComponentService knowledgeComponentService,
+                             ModuleLessonMappingService moduleLessonMappingService,
                              LessonService lessonService,
                              Mapper<KnowledgeComponentPrerequisiteDto, KnowledgeComponent> knowledgeComponentPrerequisiteMapper) {
         this.moduleRepository = moduleRepository;
@@ -47,6 +50,7 @@ public class ModuleServiceImpl implements ModuleService {
         this.moduleKCMappingRepository = moduleKCMappingRepository;
         this.moduleKCMappingService = moduleKCMappingService;
         this.knowledgeComponentService = knowledgeComponentService;
+        this.moduleLessonMappingService = moduleLessonMappingService;
         this.lessonService = lessonService;
     }
 
@@ -211,7 +215,20 @@ public class ModuleServiceImpl implements ModuleService {
     }
 
     @Override
-    public List<LessonDto> getLessonsByModule(UUID moduleId) {
-        return lessonService.getLessonsByModule(moduleId);
+    @Transactional
+    public LessonDto createLessonForModule(UUID moduleId, LessonDto lessonDto) {
+        // Verify module exists
+        moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + moduleId));
+        
+        // Create the lesson
+        LessonDto createdLesson = lessonService.createLesson(lessonDto);
+        
+        // Add the lesson to the module (this will validate KC availability in a transaction)
+        moduleLessonMappingService.addLessonToModule(moduleId, createdLesson.getLesson_id());
+        
+        return createdLesson;
     }
+
+
 }

@@ -31,28 +31,16 @@ public class LessonKCMappingServiceIntegrationTests extends AbstractIntegrationT
     @Autowired
     private KnowledgeComponentRepository knowledgeComponentRepository;
 
-    @Autowired
-    private ModuleRepository moduleRepository;
-
     private Lesson testLesson;
     private KnowledgeComponent testKC1;
     private KnowledgeComponent testKC2;
-    private Module testModule;
 
     @BeforeEach
     void setUp() {
-        // Create test module
-        testModule = Module.builder()
-                .module_name("Test Module")
-                .description("Test module description")
-                .build();
-        testModule = moduleRepository.save(testModule);
-
-        // Create test lesson
+        // Create test lesson (independent)
         testLesson = Lesson.builder()
                 .lesson_name("Test Lesson")
                 .lesson_content("Test lesson content")
-                .module(testModule)
                 .build();
         testLesson = lessonRepository.save(testLesson);
 
