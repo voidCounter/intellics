@@ -1,28 +1,48 @@
 package org.intellics.backend.services.impl;
 
-import org.intellics.backend.domain.dto.ModuleDto;
-import org.intellics.backend.domain.entities.Module;
-import org.intellics.backend.api.error.exceptions.ItemNotFoundException;
-import org.intellics.backend.mappers.Mapper;
-import org.intellics.backend.repositories.ModuleRepository;
-import org.intellics.backend.services.ModuleService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+
+import org.intellics.backend.api.error.exceptions.ItemNotFoundException;
+import org.intellics.backend.domain.dto.ModuleDto;
+import org.intellics.backend.domain.dto.ModuleKCMappingDto;
+import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentCreateDto;
+import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentPrerequisiteDto;
+import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentSimpleDto;
+import org.intellics.backend.domain.entities.KnowledgeComponent;
+import org.intellics.backend.domain.entities.Module;
+import org.intellics.backend.domain.entities.ModuleKCMapping;
+import org.intellics.backend.mappers.Mapper;
+import org.intellics.backend.repositories.ModuleKCMappingRepository;
+import org.intellics.backend.repositories.ModuleRepository;
+import org.intellics.backend.services.KnowledgeComponentService;
+import org.intellics.backend.services.ModuleKCMappingService;
+import org.intellics.backend.services.ModuleService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ModuleServiceImpl implements ModuleService {
 
     private final ModuleRepository moduleRepository;
     private final Mapper<ModuleDto, Module> moduleMapper;
+    private final ModuleKCMappingRepository moduleKCMappingRepository;
+    private final ModuleKCMappingService moduleKCMappingService;
+    private final KnowledgeComponentService knowledgeComponentService;
 
-    public ModuleServiceImpl(ModuleRepository moduleRepository, Mapper<ModuleDto, Module> moduleMapper) {
+    public ModuleServiceImpl(ModuleRepository moduleRepository,
+                             Mapper<ModuleDto, Module> moduleMapper,
+                             ModuleKCMappingRepository moduleKCMappingRepository,
+                             ModuleKCMappingService moduleKCMappingService,
+                             KnowledgeComponentService knowledgeComponentService,
+                             Mapper<KnowledgeComponentPrerequisiteDto, KnowledgeComponent> knowledgeComponentPrerequisiteMapper) {
         this.moduleRepository = moduleRepository;
         this.moduleMapper = moduleMapper;
+        this.moduleKCMappingRepository = moduleKCMappingRepository;
+        this.moduleKCMappingService = moduleKCMappingService;
+        this.knowledgeComponentService = knowledgeComponentService;
     }
 
     @Override
@@ -83,5 +103,105 @@ public class ModuleServiceImpl implements ModuleService {
 
         Module patchedModule = moduleRepository.save(existingModule);
         return moduleMapper.mapTo(patchedModule);
+    }
+
+    @Override
+    public List<KnowledgeComponentPrerequisiteDto> getKnowledgeComponentsByModule(UUID moduleId) {
+        Module module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + moduleId));
+
+        return moduleKCMappingRepository.findByModule(module).stream()
+                .map(mapping -> {
+                    KnowledgeComponent kc = mapping.getKnowledgeComponent();
+                    KnowledgeComponentPrerequisiteDto dto = KnowledgeComponentPrerequisiteDto.builder()
+                            .kc_id(kc.getKc_id())
+                            .kc_name(kc.getKc_name())
+                            .description(kc.getDescription())
+                            .prerequisiteKcIds(mapping.getPrerequisiteKnowledgeComponents() != null && !mapping.getPrerequisiteKnowledgeComponents().isEmpty() 
+                                ? mapping.getPrerequisiteKnowledgeComponents().stream()
+                                    .map(KnowledgeComponent::getKc_id)
+                                    .collect(Collectors.toList())
+                                : List.of())
+                            .build();
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public KnowledgeComponentPrerequisiteDto getKnowledgeComponentByModule(UUID moduleId, UUID kcId) {
+        Module module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + moduleId));
+
+        return moduleKCMappingRepository.findByModule(module).stream()
+                .filter(mapping -> mapping.getKnowledgeComponent().getKc_id().equals(kcId))
+                .findFirst()
+                .map(mapping -> {
+                    KnowledgeComponent kc = mapping.getKnowledgeComponent();
+                    return KnowledgeComponentPrerequisiteDto.builder()
+                            .kc_id(kc.getKc_id())
+                            .kc_name(kc.getKc_name())
+                            .description(kc.getDescription())
+                            .prerequisiteKcIds(mapping.getPrerequisiteKnowledgeComponents() != null && !mapping.getPrerequisiteKnowledgeComponents().isEmpty() 
+                                ? mapping.getPrerequisiteKnowledgeComponents().stream()
+                                    .map(KnowledgeComponent::getKc_id)
+                                    .collect(Collectors.toList())
+                                : List.of())
+                            .build();
+                })
+                .orElseThrow(() -> new ItemNotFoundException("Knowledge Component not found in module with id: " + kcId));
+    }
+
+    @Override
+    @Transactional
+    public ModuleKCMappingDto addKnowledgeComponentToModule(UUID moduleId, UUID kcId, List<UUID> prerequisiteKcIds) {
+        ModuleKCMappingDto moduleKCMappingDto = ModuleKCMappingDto.builder()
+                .moduleId(moduleId)
+                .kcId(kcId)
+                .prerequisiteKcIds(prerequisiteKcIds)
+                .build();
+        return moduleKCMappingService.createModuleKCMapping(moduleKCMappingDto);
+    }
+
+    @Override
+    @Transactional
+    public void removeKnowledgeComponentFromModule(UUID moduleId, UUID kcId) {
+        moduleKCMappingService.delete(moduleId, kcId);
+    }
+
+    @Override
+    @Transactional
+    public void removeAllKnowledgeComponentsFromModule(UUID moduleId) {
+        Module module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + moduleId));
+        
+        List<ModuleKCMapping> allMappings = moduleKCMappingRepository.findByModule(module);
+        
+        // Clear all prerequisite relationships first to avoid foreign key issues
+        for (ModuleKCMapping mapping : allMappings) {
+            if (mapping.getPrerequisiteKnowledgeComponents() != null && !mapping.getPrerequisiteKnowledgeComponents().isEmpty()) {
+                mapping.getPrerequisiteKnowledgeComponents().clear();
+                moduleKCMappingRepository.save(mapping);
+            }
+        }
+        
+        // Now delete all KC mappings for this module
+        for (ModuleKCMapping mapping : allMappings) {
+            moduleKCMappingRepository.deleteById(mapping.getMappingId());
+        }
+    }
+
+    @Override
+    @Transactional
+    public KnowledgeComponentPrerequisiteDto createAndAddKnowledgeComponentToModule(UUID moduleId, KnowledgeComponentCreateDto kcCreateDto) {
+        KnowledgeComponentSimpleDto newKcSimpleDTO= knowledgeComponentService.createKnowledgeComponent(kcCreateDto);
+        KnowledgeComponentPrerequisiteDto newKcPreqDTO = KnowledgeComponentPrerequisiteDto.builder()
+                .kc_id(newKcSimpleDTO.getKc_id())
+                .kc_name(newKcSimpleDTO.getKc_name())
+                .description(newKcSimpleDTO.getDescription())
+                .prerequisiteKcIds(List.of())
+                .build();
+        addKnowledgeComponentToModule(moduleId, newKcSimpleDTO.getKc_id(), null); // Assuming no prerequisite when creating new KC
+        return newKcPreqDTO;
     }
 }

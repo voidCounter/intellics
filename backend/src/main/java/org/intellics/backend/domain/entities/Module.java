@@ -30,4 +30,7 @@ public class Module {
     
     @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Lesson> lessons;
+
+    @OneToMany(mappedBy = "module", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ModuleKCMapping> moduleKCMappings;
 }
