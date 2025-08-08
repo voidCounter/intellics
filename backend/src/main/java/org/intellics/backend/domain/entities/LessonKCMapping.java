@@ -12,6 +12,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,7 +23,7 @@ import lombok.NoArgsConstructor;
 public class LessonKCMapping {
     @EmbeddedId
     private LessonKCMappingId mapping_id;
-    private long target_mastery;
+    private BigDecimal target_mastery;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("lesson_id")
