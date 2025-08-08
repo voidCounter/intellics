@@ -3,6 +3,7 @@ package org.intellics.backend.services;
 import java.util.List;
 import java.util.UUID;
 
+import org.intellics.backend.domain.dto.LessonDto;
 import org.intellics.backend.domain.dto.ModuleDto;
 import org.intellics.backend.domain.dto.ModuleKCMappingDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentCreateDto;
@@ -20,4 +21,5 @@ public interface ModuleService {
     void removeKnowledgeComponentFromModule(UUID moduleId, UUID kcId);
     void removeAllKnowledgeComponentsFromModule(UUID moduleId);
     org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentPrerequisiteDto createAndAddKnowledgeComponentToModule(UUID moduleId, KnowledgeComponentCreateDto kcCreateDto);
+    List<LessonDto> getLessonsByModule(UUID moduleId);
 }

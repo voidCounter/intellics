@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.intellics.backend.api.ApiResponseDto;
 import org.intellics.backend.api.ApiResponseStatus;
+import org.intellics.backend.domain.dto.LessonDto;
 import org.intellics.backend.domain.dto.ModuleDto;
 import org.intellics.backend.domain.dto.ModuleKCLinkRequestDto;
 import org.intellics.backend.domain.dto.ModuleKCMappingDto;
@@ -131,5 +132,11 @@ public class ModuleController {
             @RequestBody ModuleKCMappingPatchDto patchDto) {
         ModuleKCMappingDto updatedMapping = moduleKCMappingService.patchModuleKCMapping(moduleId, kcId, patchDto);
         return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, updatedMapping, "Prerequisites updated successfully."), HttpStatus.OK);
+    }
+
+    @GetMapping("/{moduleId}/lessons")
+    public ResponseEntity<ApiResponseDto<List<LessonDto>>> getLessonsByModule(@PathVariable("moduleId") UUID moduleId) {
+        List<LessonDto> lessons = moduleService.getLessonsByModule(moduleId);
+        return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, lessons, "Lessons for module retrieved successfully."), HttpStatus.OK);
     }
 }

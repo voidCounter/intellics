@@ -51,6 +51,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(authorizeRequests ->
                 authorizeRequests
                     .requestMatchers("/oauth2/**").permitAll() // Allow access to OAuth2 endpoints
+                    .requestMatchers("/actuator/**").permitAll() // Allow access to actuator endpoints
                     .anyRequest().authenticated()
             )
             .oauth2Login(oauth2Login ->

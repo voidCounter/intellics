@@ -33,7 +33,7 @@ public class Lesson {
     @JoinColumn(name = "module_id")
     private Module module;
     private String lesson_name;
-    private String description;
+    private String lesson_content;
     
     @OneToMany(mappedBy = "lesson", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LessonKCMapping> lessonKCMappings;

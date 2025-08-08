@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.intellics.backend.api.error.exceptions.ItemNotFoundException;
+import org.intellics.backend.domain.dto.LessonDto;
 import org.intellics.backend.domain.dto.ModuleDto;
 import org.intellics.backend.domain.dto.ModuleKCMappingDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentCreateDto;
@@ -18,6 +19,7 @@ import org.intellics.backend.mappers.Mapper;
 import org.intellics.backend.repositories.ModuleKCMappingRepository;
 import org.intellics.backend.repositories.ModuleRepository;
 import org.intellics.backend.services.KnowledgeComponentService;
+import org.intellics.backend.services.LessonService;
 import org.intellics.backend.services.ModuleKCMappingService;
 import org.intellics.backend.services.ModuleService;
 import org.springframework.stereotype.Service;
@@ -31,18 +33,21 @@ public class ModuleServiceImpl implements ModuleService {
     private final ModuleKCMappingRepository moduleKCMappingRepository;
     private final ModuleKCMappingService moduleKCMappingService;
     private final KnowledgeComponentService knowledgeComponentService;
+    private final LessonService lessonService;
 
     public ModuleServiceImpl(ModuleRepository moduleRepository,
                              Mapper<ModuleDto, Module> moduleMapper,
                              ModuleKCMappingRepository moduleKCMappingRepository,
                              ModuleKCMappingService moduleKCMappingService,
                              KnowledgeComponentService knowledgeComponentService,
+                             LessonService lessonService,
                              Mapper<KnowledgeComponentPrerequisiteDto, KnowledgeComponent> knowledgeComponentPrerequisiteMapper) {
         this.moduleRepository = moduleRepository;
         this.moduleMapper = moduleMapper;
         this.moduleKCMappingRepository = moduleKCMappingRepository;
         this.moduleKCMappingService = moduleKCMappingService;
         this.knowledgeComponentService = knowledgeComponentService;
+        this.lessonService = lessonService;
     }
 
     @Override
@@ -203,5 +208,10 @@ public class ModuleServiceImpl implements ModuleService {
                 .build();
         addKnowledgeComponentToModule(moduleId, newKcSimpleDTO.getKc_id(), null); // Assuming no prerequisite when creating new KC
         return newKcPreqDTO;
+    }
+
+    @Override
+    public List<LessonDto> getLessonsByModule(UUID moduleId) {
+        return lessonService.getLessonsByModule(moduleId);
     }
 }
