@@ -21,7 +21,7 @@ import org.hibernate.annotations.Type;
 @Entity
 @Table(name = "multiple_choice_questions")
 @DiscriminatorValue("MULTIPLE_CHOICE")
-public class MultipleChoicequestionEntity extends QuestionEntity {
+public class MultipleChoiceQuestionEntity extends QuestionEntity {
     @Type(JsonBinaryType.class)
     @Column(name = "options", columnDefinition = "jsonb")
     private List<QuestionOption> options;

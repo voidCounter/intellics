@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.intellics.backend.domain.entities.Module;
-import org.intellics.backend.domain.entities.MultipleChoicequestionEntity;
+import org.intellics.backend.domain.entities.MultipleChoiceQuestionEntity;
 import org.intellics.backend.domain.entities.QuestionEntity;
 import org.intellics.backend.domain.entities.QuestionOption;
 import org.intellics.backend.domain.entities.QuestionType;
@@ -27,7 +27,7 @@ public final class TestDataUtil {
                     QuestionOption.builder().option_text("c").option_explanation("b").build();
                 QuestionOption option4 =
                     QuestionOption.builder().option_text("d").option_explanation("b").build();
-                yield MultipleChoicequestionEntity.builder().question_text("What is " +
+                yield MultipleChoiceQuestionEntity.builder().question_text("What is " +
                         "happening?").options(List.of(option1, option2, option3, option4))
                     .correct_option_key("a").build();
             }

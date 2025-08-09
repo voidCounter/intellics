@@ -10,5 +10,9 @@ public interface QuestionService {
     
     QuestionEntity getQuestion(UUID question_id);
     
+    QuestionEntity updateQuestion(UUID question_id, QuestionEntity questionEntity);
+    
+    void deleteQuestion(UUID question_id);
+    
     Page<QuestionEntity> findAll(Pageable pageable);
 }

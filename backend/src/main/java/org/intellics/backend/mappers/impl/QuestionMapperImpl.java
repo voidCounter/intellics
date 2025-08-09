@@ -3,7 +3,7 @@ package org.intellics.backend.mappers.impl;
 import org.intellics.backend.domain.dto.MultipleChoiceQuestionDto;
 import org.intellics.backend.domain.dto.QuestionDto;
 import org.intellics.backend.domain.dto.WrittenQuestionDto;
-import org.intellics.backend.domain.entities.MultipleChoicequestionEntity;
+import org.intellics.backend.domain.entities.MultipleChoiceQuestionEntity;
 import org.intellics.backend.domain.entities.QuestionEntity;
 import org.intellics.backend.domain.entities.WrittenQuestionEntity;
 import org.intellics.backend.mappers.Mapper;
@@ -20,7 +20,7 @@ public class QuestionMapperImpl implements Mapper<QuestionDto, QuestionEntity> {
     
     @Override
     public QuestionDto mapTo(QuestionEntity questionEntity) {
-        if (questionEntity instanceof MultipleChoicequestionEntity) {
+        if (questionEntity instanceof MultipleChoiceQuestionEntity) {
             return modelMapper.map(questionEntity, MultipleChoiceQuestionDto.class);
         } else if (questionEntity instanceof WrittenQuestionEntity) {
             return modelMapper.map(questionEntity, WrittenQuestionDto.class);
@@ -32,7 +32,7 @@ public class QuestionMapperImpl implements Mapper<QuestionDto, QuestionEntity> {
     @Override
     public QuestionEntity mapFrom(QuestionDto questionDto) {
         if (questionDto instanceof MultipleChoiceQuestionDto) {
-            return modelMapper.map(questionDto, MultipleChoicequestionEntity.class);
+            return modelMapper.map(questionDto, MultipleChoiceQuestionEntity.class);
         } else if (questionDto instanceof WrittenQuestionDto) {
             return modelMapper.map(questionDto, WrittenQuestionEntity.class);
         }
