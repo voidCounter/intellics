@@ -31,4 +31,6 @@ public class ModuleLessonMapping {
     @MapsId("lessonId")
     @JoinColumn(name = "lesson_id")
     private Lesson lesson;
+    
+    private Integer orderIndex;
 }

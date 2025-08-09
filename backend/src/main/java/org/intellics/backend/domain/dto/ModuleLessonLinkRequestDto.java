@@ -1,5 +1,7 @@
 package org.intellics.backend.domain.dto;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,5 +14,9 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class ModuleLessonLinkRequestDto {
+    @NotNull(message = "Lesson ID is required")
     private UUID lessonId;
+    
+    @Min(value = 1, message = "Order index must be at least 1")
+    private Integer orderIndex; // Optional, will auto-assign if not provided
 }

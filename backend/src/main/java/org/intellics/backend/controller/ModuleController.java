@@ -16,6 +16,8 @@ import org.intellics.backend.domain.dto.ModuleKCMappingDto;
 import org.intellics.backend.domain.dto.ModuleKCMappingPatchDto;
 import org.intellics.backend.domain.dto.ModuleLessonLinkRequestDto;
 import org.intellics.backend.domain.dto.ModuleLessonMappingDto;
+
+import org.intellics.backend.domain.dto.ModuleLessonOrderUpdateDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentCreateDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentPrerequisiteDto;
 import org.intellics.backend.services.LessonService;
@@ -245,7 +247,7 @@ public class ModuleController {
 
     // Lesson-related endpoints
     @GetMapping("/{moduleId}/lessons")
-    @Operation(summary = "Get lessons by module ID", description = "Retrieves all lessons assigned to a specific module")
+    @Operation(summary = "Get lessons by module ID", description = "Retrieves all lessons assigned to a specific module, ordered by their order index")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lessons retrieved successfully",
                     content = @Content(schema = @Schema(implementation = ApiResponseDto.class))),
@@ -259,7 +261,7 @@ public class ModuleController {
 
     @PostMapping("/{moduleId}/lessons")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Add lesson to module", description = "Adds an existing lesson to a module")
+    @Operation(summary = "Add lesson to module", description = "Adds an existing lesson to a module with optional order index. If order index is not provided, the lesson will be added at the end.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Lesson added to module successfully",
                     content = @Content(schema = @Schema(implementation = ApiResponseDto.class))),
@@ -270,7 +272,7 @@ public class ModuleController {
     public ResponseEntity<ApiResponseDto<ModuleLessonMappingDto>> addLessonToModule(
             @Parameter(description = "Unique identifier of the module") @PathVariable("moduleId") UUID moduleId,
             @Parameter(description = "Lesson linking data") @Validated @RequestBody ModuleLessonLinkRequestDto requestDto) {
-        ModuleLessonMappingDto createdMapping = moduleLessonMappingService.addLessonToModule(moduleId, requestDto.getLessonId());
+        ModuleLessonMappingDto createdMapping = moduleLessonMappingService.addLessonToModule(moduleId, requestDto.getLessonId(), requestDto.getOrderIndex());
         return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, createdMapping, "Lesson added to module successfully."), HttpStatus.CREATED);
     }
 
@@ -290,6 +292,22 @@ public class ModuleController {
         
         LessonDto createdLesson = moduleService.createLessonForModule(moduleId, lessonDto);
         return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, createdLesson, "Lesson created and added to module successfully."), HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{moduleId}/lessons/order")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Update all lesson orders", description = "Updates the order of all lessons in a module. Perfect for drag-and-drop reordering.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "All lesson orders updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "403", description = "Access denied - Admin role required"),
+            @ApiResponse(responseCode = "404", description = "Module not found")
+    })
+    public ResponseEntity<ApiResponseDto<Void>> updateAllLessonOrders(
+            @Parameter(description = "Unique identifier of the module") @PathVariable("moduleId") UUID moduleId,
+            @Parameter(description = "Complete lesson order data") @Validated @RequestBody ModuleLessonOrderUpdateDto orderUpdateDto) {
+        moduleLessonMappingService.updateAllLessonOrders(moduleId, orderUpdateDto);
+        return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, null, "All lesson orders updated successfully."), HttpStatus.OK);
     }
 
     @DeleteMapping("/{moduleId}/lessons/{lessonId}")

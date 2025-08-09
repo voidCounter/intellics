@@ -225,7 +225,7 @@ public class ModuleServiceImpl implements ModuleService {
         LessonDto createdLesson = lessonService.createLesson(lessonDto);
         
         // Add the lesson to the module (this will validate KC availability in a transaction)
-        moduleLessonMappingService.addLessonToModule(moduleId, createdLesson.getLesson_id());
+        moduleLessonMappingService.addLessonToModule(moduleId, createdLesson.getLesson_id(), null);
         
         return createdLesson;
     }

@@ -23,6 +23,7 @@ public class ModuleLessonMappingMapperImpl implements ModuleLessonMappingMapper 
                         .moduleId(dto.getModuleId())
                         .lessonId(dto.getLessonId())
                         .build())
+                .orderIndex(dto.getOrderIndex())
                 .build();
     }
 
@@ -37,6 +38,7 @@ public class ModuleLessonMappingMapperImpl implements ModuleLessonMappingMapper 
                 .lessonId(entity.getMappingId().getLessonId())
                 .moduleName(entity.getModule() != null ? entity.getModule().getModule_name() : null)
                 .lessonName(entity.getLesson() != null ? entity.getLesson().getLesson_name() : null)
+                .orderIndex(entity.getOrderIndex())
                 .build();
     }
 

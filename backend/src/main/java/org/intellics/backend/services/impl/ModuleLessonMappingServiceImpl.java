@@ -1,6 +1,7 @@
 package org.intellics.backend.services.impl;
 
 import org.intellics.backend.domain.dto.ModuleLessonMappingDto;
+import org.intellics.backend.domain.dto.ModuleLessonOrderUpdateDto;
 import org.intellics.backend.domain.entities.Lesson;
 import org.intellics.backend.domain.entities.Module;
 import org.intellics.backend.domain.entities.ModuleLessonMapping;
@@ -16,8 +17,11 @@ import org.intellics.backend.services.ModuleLessonMappingService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -57,7 +61,7 @@ public class ModuleLessonMappingServiceImpl implements ModuleLessonMappingServic
     }
 
     @Override
-    public ModuleLessonMappingDto addLessonToModule(UUID moduleId, UUID lessonId) {
+    public ModuleLessonMappingDto addLessonToModule(UUID moduleId, UUID lessonId, Integer orderIndex) {
         // Check if both module and lesson exist
         Module module = moduleRepository.findById(moduleId)
                 .orElseThrow(() -> new RuntimeException("Module not found"));
@@ -72,6 +76,11 @@ public class ModuleLessonMappingServiceImpl implements ModuleLessonMappingServic
         // Validate that all KCs in the lesson are available in the module
         validateLessonKCsInModule(lessonId, moduleId);
 
+        // If order index is not provided, assign the next available index
+        if (orderIndex == null) {
+            orderIndex = moduleLessonMappingRepository.findNextOrderIndexForModule(moduleId);
+        }
+
         ModuleLessonMapping mapping = ModuleLessonMapping.builder()
                 .mappingId(ModuleLessonMappingId.builder()
                         .moduleId(moduleId)
@@ -79,10 +88,74 @@ public class ModuleLessonMappingServiceImpl implements ModuleLessonMappingServic
                         .build())
                 .module(module)
                 .lesson(lesson)
+                .orderIndex(orderIndex)
                 .build();
 
         ModuleLessonMapping savedMapping = moduleLessonMappingRepository.save(mapping);
         return moduleLessonMappingMapper.mapFrom(savedMapping);
+    }
+    
+    @Override
+    @Transactional
+    public void updateAllLessonOrders(UUID moduleId, ModuleLessonOrderUpdateDto orderUpdateDto) {
+        List<ModuleLessonOrderUpdateDto.LessonOrderItem> lessonOrders = orderUpdateDto.getLessonOrders();
+        
+        // Validate sequential ordering (1, 2, 3, 4... with no gaps)
+        validateSequentialOrdering(lessonOrders);
+        
+        // Verify all lessons belong to this module
+        List<ModuleLessonMapping> existingMappings = moduleLessonMappingRepository.findByModuleId(moduleId);
+        if (existingMappings.size() != lessonOrders.size()) {
+            throw new RuntimeException("Lesson count mismatch. Expected " + existingMappings.size() + 
+                    " lessons for module, but received " + lessonOrders.size());
+        }
+        
+        // Verify all provided lessons exist in this module (security check)
+        Set<UUID> existingLessonIds = existingMappings.stream()
+                .map(mapping -> mapping.getMappingId().getLessonId())
+                .collect(Collectors.toSet());
+        
+        for (ModuleLessonOrderUpdateDto.LessonOrderItem item : lessonOrders) {
+            if (!existingLessonIds.contains(item.getLessonId())) {
+                throw new RuntimeException("Lesson " + item.getLessonId() + " is not mapped to this module");
+            }
+        }
+        
+        // Perform batch update - much more efficient than individual saves!
+        for (ModuleLessonOrderUpdateDto.LessonOrderItem item : lessonOrders) {
+            moduleLessonMappingRepository.updateSingleLessonOrder(
+                moduleId, 
+                item.getLessonId(), 
+                item.getOrderIndex()
+            );
+        }
+    }
+    
+    private void validateSequentialOrdering(List<ModuleLessonOrderUpdateDto.LessonOrderItem> lessonOrders) {
+        if (lessonOrders.isEmpty()) {
+            throw new RuntimeException("Lesson orders list cannot be empty");
+        }
+        
+        // Extract and sort order indexes
+        List<Integer> orderIndexes = lessonOrders.stream()
+                .map(ModuleLessonOrderUpdateDto.LessonOrderItem::getOrderIndex)
+                .sorted()
+                .toList();
+        
+        // Check for duplicates
+        Set<Integer> uniqueIndexes = new HashSet<>(orderIndexes);
+        if (uniqueIndexes.size() != orderIndexes.size()) {
+            throw new RuntimeException("Duplicate order indexes are not allowed");
+        }
+        
+        // Check that ordering starts from 1 and is sequential
+        for (int i = 0; i < orderIndexes.size(); i++) {
+            int expectedIndex = i + 1;
+            if (!orderIndexes.get(i).equals(expectedIndex)) {
+                throw new RuntimeException("Order indexes must be sequential starting from 1. " +
+                        "Expected " + expectedIndex + " but found " + orderIndexes.get(i));
+            }
+        }
     }
 
     @Override
