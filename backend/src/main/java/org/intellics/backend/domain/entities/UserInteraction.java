@@ -25,9 +25,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "student_interactions")
+@Table(name = "user_interactions")
 @EntityListeners(AuditingEntityListener.class)
-public class StudentInteraction {
+public class UserInteraction {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID interaction_id;
@@ -56,8 +56,8 @@ public class StudentInteraction {
     private Scaffold scaffold;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "kc_id")
-    private KnowledgeComponent knowledgeComponent;
+    @JoinColumn(name = "module_id")
+    private Module module;
     
     private String student_answer;
     private boolean is_correct;
@@ -65,5 +65,4 @@ public class StudentInteraction {
     private int time_spent_seconds;
     @CreatedDate
     private Instant timestamp;
-    private double p_mastery;
 }

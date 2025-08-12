@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -24,6 +25,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @AllArgsConstructor
 @Builder
 @Entity
+@Table(name = "sessions")
 @EntityListeners(AuditingEntityListener.class)
 public class Session {
     @Id
@@ -33,10 +35,17 @@ public class Session {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+    
+    @Column(name = "user_agent")
     private String user_agent;
+    
+    @Column(name = "device_type")
     private String device_type;
     
+    @Column(name = "start_time")
     private Instant start_time;
+    
+    @Column(name = "end_time")
     private Instant end_time;
     
     @CreatedDate

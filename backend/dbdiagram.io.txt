@@ -1,0 +1,228 @@
+// ===========================
+// Core Entities
+// ===========================
+
+Table users {
+  user_id uuid [pk]
+  username varchar(255)
+  email varchar(255)
+  google_id varchar(255)
+  image_url varchar(255)
+  created_at timestamp(6) [note: 'with time zone']
+  updated_at timestamp(6) [note: 'with time zone']
+
+  Note: '''
+    Stores each learner in the system, uniquely identified by user_id (UUID). 
+    Used across all tables to associate actions and mastery with specific learners.'''
+}
+
+Table modules {
+  module_id uuid [pk]
+  module_name varchar(255)
+  description text
+
+  Note: '''
+    Top-level course or topic container (e.g., "Algebra I", "Intro to Programming").
+    Used to organize lessons and support curriculum browsing/filtering.'''
+}
+
+Table lessons {
+  lesson_id uuid [pk]
+  lesson_name varchar(255)
+  lesson_content text
+
+  Note: '''
+    Each lesson contains instructional content (video, text, example problems).
+    Linked to one or more Knowledge Components (KCs) through mapping tables.'''
+}
+
+// ===========================
+// Knowledge Modeling
+// ===========================
+
+Table knowledge_components {
+  kc_id uuid [pk]
+  kc_name varchar(255)
+  description text
+
+  Note: '''
+    Atomic skills or concepts (e.g., "solving linear equations", "derivatives").
+    KCs are used to structure the curriculum, drive personalization, and track mastery.'''
+}
+
+Table lesson_kc_mapping {
+  lesson_id uuid [ref: > lessons.lesson_id]
+  kc_id uuid [ref: > knowledge_components.kc_id]
+  target_mastery numeric(3,2) [note: 'Range: 0.01 - 1.00']
+
+  Indexes {
+    (kc_id, lesson_id) [pk]
+  }
+
+  Note: '''
+    Defines the expected mastery threshold a student should reach from a lesson.
+    Supports lesson recommendations and mastery updates.'''
+}
+
+// ===========================
+// Assessment & Scaffolding
+// ===========================
+
+Table questions {
+  question_id uuid [pk]
+  question_type varchar(31)
+  question_text text
+  hint_level_1 text
+  hint_level_2 text
+
+  Note: '''
+    Assessment items used to measure knowledge and update mastery.
+    Each question can be linked to multiple KCs (for skill tracing).
+    Supports multi-level hints for step-by-step nudging before scaffolding.'''
+}
+
+Table multiple_choice_questions {
+  question_id uuid [pk, ref: > questions.question_id]
+  correct_option_key varchar(255)
+  options jsonb
+}
+
+Table written_question_entity {
+  question_id uuid [pk, ref: > questions.question_id]
+  answer_explanation text
+  correct_answer_text text
+}
+
+Table question_kc_mapping {
+  question_id uuid [ref: > questions.question_id]
+  kc_id uuid [ref: > knowledge_components.kc_id]
+  weight double
+
+  Indexes {
+    (kc_id, question_id) [pk]
+  }
+}
+
+Table scaffolds {
+  scaffold_id uuid [pk]
+  question_id uuid [ref: > questions.question_id]
+  scaffold_text text
+  scaffold_correct_answer text
+  order_index integer
+}
+
+// ===========================
+// Learner Activity & Modeling
+// ===========================
+
+Table sessions {
+  session_id uuid [pk]
+  user_id uuid [ref: > users.user_id]
+  user_agent varchar(255)
+  device_type varchar(255)
+  start_time timestamp(6) [note: 'with time zone']
+  end_time timestamp(6) [note: 'with time zone']
+  created_at timestamp(6) [note: 'with time zone']
+  updated_at timestamp(6) [note: 'with time zone']
+}
+
+Table student_interactions {
+  interaction_id uuid [pk]
+  session_id uuid [ref: > sessions.session_id]
+  user_id uuid [ref: > users.user_id]
+  module_id uuid [ref: > modules.module_id]  // NEW
+  lesson_id uuid [ref: > lessons.lesson_id]
+  question_id uuid [ref: > questions.question_id]
+  scaffold_id uuid [ref: > scaffolds.scaffold_id]
+  // kc_id REMOVED - moved to interaction_kc_mapping
+  interaction_type varchar(255)
+  student_answer varchar(255)
+  is_correct boolean
+  hint_level integer
+  time_spent_seconds integer
+  timestamp timestamp(6)
+  p_mastery double [note: 'Average mastery across all KCs for this interaction']
+}
+
+Table interaction_kc_mapping {
+  interaction_id uuid [ref: > student_interactions.interaction_id]
+  kc_id uuid [ref: > knowledge_components.kc_id]
+  weight double [note: 'weight scales the impact of an interaction on a KC’s kc_mastery_after in BKT updates.']
+  kc_mastery_before double [note: 'KC mastery before this interaction']
+  kc_mastery_after double [note: 'KC mastery after this interaction']
+  
+  Indexes {
+    (interaction_id, kc_id) [pk]
+  }
+  
+  Note: '''
+    Records all KCs involved in an interaction with their weights.
+    For single-KC scenarios, just one record per interaction.
+    For multi-KC scenarios, multiple records per interaction.
+  '''
+}
+
+Table studentkcmastery {
+  user_id uuid [ref: > users.user_id]
+  kc_id uuid [ref: > knowledge_components.kc_id]
+  p_mastery double 
+  p_guess double 
+  p_slip double 
+  p_transit double 
+  updated_at timestamp(6) [note: 'with time zone']
+
+  Indexes {
+    (kc_id, user_id) [pk]
+  }
+}
+
+// ===========================
+// Roles & Permissions
+// ===========================
+
+Table roles {
+  role_id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(20) [not null]
+}
+
+Table user_roles {
+  user_id uuid [ref: > users.user_id]
+  role_id uuid [ref: > roles.role_id]
+
+  Indexes {
+    (user_id, role_id) [pk]
+  }
+}
+
+// ===========================
+// Module-KC & Lesson Mapping
+// ===========================
+
+Table module_kc_mapping {
+  module_id uuid [ref: > modules.module_id]
+  kc_id uuid [ref: > knowledge_components.kc_id]
+
+  Indexes {
+    (module_id, kc_id) [pk]
+  }
+}
+
+Table module_kc_prerequisite {
+  module_id uuid
+  kc_id uuid
+  prerequisite_kc_id uuid [ref: > knowledge_components.kc_id]
+
+  Indexes {
+    (module_id, kc_id, prerequisite_kc_id) [pk]
+  }
+}
+
+Table module_lesson_mapping {
+  module_id uuid [ref: > modules.module_id]
+  lesson_id uuid [ref: > lessons.lesson_id]
+  order_index integer
+
+  Indexes {
+    (module_id, lesson_id) [pk]
+  }
+}
