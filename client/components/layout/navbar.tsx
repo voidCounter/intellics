@@ -2,12 +2,37 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Home, User, LogOut } from 'lucide-react';
+import { Home, User, LogOut, Settings, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAppStore } from '@/lib/store';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useAuthStore } from '@/lib/stores';
+import { useAuth } from '@/hooks/useAuth';
 
 export function Navbar() {
-  const { isAuthenticated, user, logout } = useAppStore();
+  const { isAuthenticated, user, logout } = useAuth();
+  const { isAdminMode, setAdminMode } = useAuthStore();
+
+  const isAdmin = user?.roles?.some(role => role.name === 'ROLE_ADMIN');
+
+  const handleAdminToggle = (value: string) => {
+    if (value === 'admin') {
+      // Double-check admin role for security
+      if (isAdmin) {
+        setAdminMode(true);
+      }
+    } else {
+      setAdminMode(false);
+    }
+  };
 
   return (
     <nav className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
@@ -33,16 +58,55 @@ export function Navbar() {
                     <span>Home</span>
                   </Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/profile" className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
-                    <span>{user.username}</span>
-                  </Link>
-                </Button>
-                <Button variant="ghost" size="sm" onClick={logout}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </Button>
+                
+                {/* User Dropdown Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      <span>{user.username}</span>
+                      <ChevronDown className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end">
+                    <DropdownMenuLabel>Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    
+                    {/* Admin Mode Toggle */}
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuLabel className="text-xs text-muted-foreground">
+                          Admin Mode
+                        </DropdownMenuLabel>
+                        <DropdownMenuRadioGroup value={isAdminMode ? 'admin' : 'user'} onValueChange={handleAdminToggle}>
+                          <DropdownMenuRadioItem value="user">
+                            <User className="h-4 w-4 mr-2" />
+                            User Mode
+                          </DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="admin">
+                            <Settings className="h-4 w-4 mr-2" />
+                            Admin Mode
+                          </DropdownMenuRadioItem>
+                        </DropdownMenuRadioGroup>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    
+                    {/* Profile Link */}
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile" className="flex items-center">
+                        <User className="h-4 w-4 mr-2" />
+                        View Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    
+                    {/* Logout */}
+                    <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600">
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               // Optionally, show a login button if not authenticated and not on the auth page

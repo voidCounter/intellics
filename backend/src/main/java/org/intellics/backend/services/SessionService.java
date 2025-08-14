@@ -17,6 +17,13 @@ public interface SessionService {
     SessionDto createSessionForCurrentUser(UUID currentUserId, SessionCreateDto sessionCreateDto);
 
     /**
+     * Get or create a session for the current user (prevents duplicates)
+     * Returns existing active session if found, otherwise creates new one.
+     * Matches by user ID, device type, and user agent to support multiple devices.
+     */
+    SessionDto getOrCreateSessionForCurrentUser(UUID currentUserId, SessionCreateDto sessionCreateDto);
+
+    /**
      * Get a session by ID
      */
     SessionDto getSessionById(UUID sessionId);
@@ -50,9 +57,16 @@ public interface SessionService {
     );
 
     /**
-     * End a session (ownership check handled by @PreAuthorize)
+     * Update session heartbeat (last active time)
      */
-    SessionDto endSession(UUID sessionId);
+    SessionDto updateSessionHeartbeat(UUID sessionId);
+
+    /**
+     * End a session for the current user (set end_time)
+     */
+    void endSessionForCurrentUser(UUID sessionId);
+
+
     
     /**
      * Delete a session

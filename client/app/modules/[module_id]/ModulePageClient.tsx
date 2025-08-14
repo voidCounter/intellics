@@ -7,13 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, ArrowLeft } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
-import { Module, Lesson } from '@/lib/store';
+import { useData } from '@/hooks/useData';
+import { Module, Lesson } from '@/types/api';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 
 export default function ModulePageClient() {
   const params = useParams();
-  const { modules, lessons, loadData } = useAppStore();
+  const { modules, lessons, loadData } = useData();
   const [currentModule, setCurrentModule] = useState<Module | null>(null);
   const [moduleLessons, setModuleLessons] = useState<Lesson[]>([]);
 
@@ -23,11 +23,12 @@ export default function ModulePageClient() {
 
   useEffect(() => {
     if (modules.length > 0 && params.module_id) {
-      const moduleId = parseInt(params.module_id as string);
+      const moduleId = params.module_id as string;
       const module = modules.find(m => m.module_id === moduleId);
       setCurrentModule(module || null);
-      const filteredLessons = lessons.filter(l => l.module_id === moduleId);
-      setModuleLessons(filteredLessons);
+      // For now, show all lessons since our new Lesson type doesn't have module_id
+      // TODO: Update when backend provides proper lesson-module relationships
+      setModuleLessons(lessons);
     }
   }, [modules, lessons, params.module_id]);
 
@@ -86,7 +87,7 @@ export default function ModulePageClient() {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600 mb-4 text-sm leading-relaxed">
-                  {lesson.description}
+                  {lesson.lesson_content.substring(0, 150)}...
                 </p>
                 <Button asChild className="w-full">
                   <Link href={`/lessons/${lesson.lesson_id}`}>

@@ -23,6 +23,12 @@ springdoc:
 
 app:
   jwtExpirationInMs: 86400000 # 24 hours
+  session:
+    cleanup:
+      intervalMinutes: 5 # Run cleanup every 5 minute (optimized for 15s heartbeats)
+      inactivityThresholdMinutes: 6 # End sessions inactive for 6 seconds
+      endTimeOffsetMinutes: 1 # Add 1 min to last_active_at when ending (matches heartbeat interval)
 logging:
   level:
     org.springframework.security: DEBUG
+    org.intellics.backend.services.impl.SessionCleanupServiceImpl: DEBUG

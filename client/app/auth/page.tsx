@@ -3,12 +3,13 @@
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
-import { useAppStore } from "@/lib/store";
+import { useAuth } from "@/hooks/useAuth";
+import { authApi } from "@/services/api";
 
 function AuthComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setUser, isAuthenticated } = useAppStore();
+  const { setUser, isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     // Check if user is already authenticated
@@ -28,25 +29,21 @@ function AuthComponent() {
     }
   }, [searchParams, isAuthenticated, router]);
 
+  // Redirect to home when user is set
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      router.push('/');
+    }
+  }, [user, isAuthenticated, router]);
+
   const fetchUserInfo = async (token: string) => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/users/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const user = await response.json();
-        setUser(user);
-        router.push('/');
-      } else {
-        console.error('Failed to fetch user info');
-        localStorage.removeItem('authToken');
-      }
+      const response = await authApi.getCurrentUser(token);
+      const userData = response.data;
+      // Set user state - the useEffect above will handle the redirect
+      setUser(userData);
     } catch (error) {
-      console.error('Error fetching user info:', error);
+      console.error('❌ Error fetching user info:', error);
       localStorage.removeItem('authToken');
     }
   };

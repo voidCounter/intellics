@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 @Table(name = "users")
 public class User implements UserDetails {
     @Id
+    @JsonIgnore
     private UUID user_id;
     private String username;
     private String email;
@@ -68,6 +69,7 @@ public class User implements UserDetails {
     private List<Session> sessions;
 
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (roles == null) {
             return Collections.emptyList();
@@ -78,31 +80,37 @@ public class User implements UserDetails {
     }
 
     @Override
+    @JsonIgnore
     public String getPassword() {
         return null; // Passwords are not stored for OAuth2 users
     }
 
     @Override
+    @JsonIgnore
     public String getUsername() {
         return this.username; // Use the username field for UserDetails
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonExpired() {
         return true;
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonLocked() {
         return true;
     }
 
     @Override
+    @JsonIgnore
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
     @Override
+    @JsonIgnore
     public boolean isEnabled() {
         return true;
     }

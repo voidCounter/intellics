@@ -1,11 +1,8 @@
 package org.intellics.backend.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import java.time.Instant;
+import java.util.UUID;
+
 import org.intellics.backend.api.ApiResponseDto;
 import org.intellics.backend.api.ApiResponseStatus;
 import org.intellics.backend.api.PaginatedResponseDto;
@@ -13,21 +10,34 @@ import org.intellics.backend.domain.dto.SessionCreateDto;
 import org.intellics.backend.domain.dto.SessionDto;
 import org.intellics.backend.domain.dto.UserSessionDto;
 import org.intellics.backend.services.SessionService;
+import org.intellics.backend.services.SessionCleanupService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/sessions")
@@ -36,29 +46,45 @@ import java.util.UUID;
 public class SessionController {
 
     private final SessionService sessionService;
+    private final SessionCleanupService sessionCleanupService;
 
     @Operation(
-        summary = "Create a new session", 
-        description = "Creates a new learning session for the current user. Start time is automatically set by server for security."
+        summary = "Create or get existing session", 
+        description = "Creates a new session or returns existing active session to prevent duplicates. " +
+                     "Matches by user ID, device type, and user agent to support multiple devices and browser tabs."
     )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Session created successfully"),
+        @ApiResponse(responseCode = "200", description = "Existing active session returned"),
+        @ApiResponse(responseCode = "201", description = "New session created successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid request data")
     })
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<ApiResponseDto<SessionDto>> createSession(
             @Valid @RequestBody SessionCreateDto sessionCreateDto) {
         
         UUID currentUserId = getCurrentUserId();
-        SessionDto createdSession = sessionService.createSessionForCurrentUser(currentUserId, sessionCreateDto);
+        SessionDto session = sessionService.getOrCreateSessionForCurrentUser(currentUserId, sessionCreateDto);
         
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponseDto.<SessionDto>builder()
-                .status(ApiResponseStatus.SUCCESS)
-                .message("Session created successfully")
-                .data(createdSession)
-                .build());
+        // Check if this is a new session or existing one by comparing creation time
+        boolean isNewSession = session.getCreatedAt().equals(session.getStartTime());
+        
+        if (isNewSession) {
+            // New session created
+            return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponseDto.<SessionDto>builder()
+                    .status(ApiResponseStatus.SUCCESS)
+                    .message("Session created successfully")
+                    .data(session)
+                    .build());
+        } else {
+            // Existing session returned
+            return ResponseEntity.ok(
+                ApiResponseDto.<SessionDto>builder()
+                    .status(ApiResponseStatus.SUCCESS)
+                    .message("Existing active session returned")
+                    .data(session)
+                    .build());
+        }
     }
 
     @Operation(
@@ -83,6 +109,58 @@ public class SessionController {
                 .status(ApiResponseStatus.SUCCESS)
                 .message("Session retrieved successfully")
                 .data(session)
+                .build());
+    }
+
+    @Operation(
+        summary = "Update session heartbeat", 
+        description = "Updates the last active time for a session. Returns 404 if session not found or has ended."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Session heartbeat updated successfully"),
+        @ApiResponse(responseCode = "404", description = "Session not found or has ended"),
+        @ApiResponse(responseCode = "403", description = "Access denied - Session does not belong to user")
+    })
+    @PutMapping("/{sessionId}/heartbeat")
+    @PreAuthorize("@sessionSecurity.isOwner(#sessionId)")
+    public ResponseEntity<ApiResponseDto<SessionDto>> updateSessionHeartbeat(
+            @Parameter(description = "Session ID") 
+            @PathVariable UUID sessionId) {
+        
+        SessionDto updatedSession = sessionService.updateSessionHeartbeat(sessionId);
+        
+        return ResponseEntity.ok(
+            ApiResponseDto.<SessionDto>builder()
+                .status(ApiResponseStatus.SUCCESS)
+                .message("Session heartbeat updated successfully")
+                .data(updatedSession)
+                .build());
+    }
+
+    @Operation(
+        summary = "End session", 
+        description = "Ends a session for the current user by setting end_time"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Session ended successfully"),
+        @ApiResponse(responseCode = "404", description = "Session not found"),
+        @ApiResponse(responseCode = "403", description = "Access denied - Session does not belong to user")
+    })
+    @PutMapping("/{sessionId}/end")
+    @PreAuthorize("@sessionSecurity.isOwner(#sessionId)")
+    public ResponseEntity<ApiResponseDto<Object>> endSession(
+            @Parameter(description = "Session ID") 
+            @PathVariable UUID sessionId) {
+        
+        sessionService.endSessionForCurrentUser(sessionId);
+        
+        return ResponseEntity.ok(
+            ApiResponseDto.<Object>builder()
+                .status(ApiResponseStatus.SUCCESS)
+                .message("Session ended successfully")
+                .data(new Object() {
+                    public final String message = "Session ended successfully";
+                })
                 .build());
     }
 
@@ -190,31 +268,7 @@ public class SessionController {
                 .build());
     }
 
-    @Operation(
-        summary = "End session", 
-        description = "Ends a session by setting the end time to current timestamp (only if it belongs to current user)"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Session ended successfully"),
-        @ApiResponse(responseCode = "400", description = "Session is already ended"),
-        @ApiResponse(responseCode = "404", description = "Session not found"),
-        @ApiResponse(responseCode = "403", description = "Access denied - Session does not belong to user")
-    })
-    @PatchMapping("/{sessionId}/end")
-    @PreAuthorize("@sessionSecurity.isOwner(#sessionId)")
-    public ResponseEntity<ApiResponseDto<SessionDto>> endSession(
-            @Parameter(description = "Session ID") 
-            @PathVariable UUID sessionId) {
-        
-        SessionDto endedSession = sessionService.endSession(sessionId);
-        
-        return ResponseEntity.ok(
-            ApiResponseDto.<SessionDto>builder()
-                .status(ApiResponseStatus.SUCCESS)
-                .message("Session ended successfully")
-                .data(endedSession)
-                .build());
-    }
+
 
     @Operation(
         summary = "Delete session", 
@@ -234,6 +288,31 @@ public class SessionController {
         sessionService.deleteSession(sessionId);
         
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
+        summary = "Manual session cleanup", 
+        description = "ADMIN-only endpoint to manually trigger session cleanup (for testing/monitoring)"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Cleanup completed successfully"),
+        @ApiResponse(responseCode = "403", description = "Access denied - Admin role required")
+    })
+    @PostMapping("/cleanup")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponseDto<Object>> manualCleanup() {
+        long inactiveCount = sessionCleanupService.getInactiveSessionCount();
+        sessionCleanupService.cleanupInactiveSessions();
+        
+        return ResponseEntity.ok(
+            ApiResponseDto.<Object>builder()
+                .status(ApiResponseStatus.SUCCESS)
+                .message("Session cleanup completed")
+                .data(new Object() {
+                    public final long inactiveSessionsFound = inactiveCount;
+                    public final String message = "Cleanup completed successfully";
+                })
+                .build());
     }
 
     /**

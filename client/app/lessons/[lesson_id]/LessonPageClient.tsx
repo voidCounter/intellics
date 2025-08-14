@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -10,272 +10,151 @@ import atomOneLight from 'react-syntax-highlighter/dist/styles/atom-one-light';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, TestTube, CheckCircle } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
-import { QuestionCard } from '@/components/quiz/question-card';
-import { QuizResults } from '@/components/quiz/quiz-results';
-import { Lesson, Question } from '@/lib/store';
-import { useLessonTracking } from '@/lib/hooks/useLessonTracking';
+import { ArrowLeft, BookOpen, TestTube } from 'lucide-react';
+import { useData } from '@/hooks/useData';
+import { Lesson } from '@/types/api';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 
-interface QuizResult {
-    questionId: number;
-    questionText: string;
-    userAnswer: string;
-    correctAnswer: string;
-    isCorrect: boolean;
-    hintsUsed: number;
-    scaffoldUsed: boolean;
-}
-
 export default function LessonPageClient() {
-    const params = useParams();
-    const router = useRouter();
-    const {
-        lessons,
-        questions,
-        loadData,
-        setCurrentLesson,
-        currentLesson,
-        showQuiz,
-        setShowQuiz,
-        currentQuestionIndex,
-        setCurrentQuestionIndex,
-        addInteraction,
-        updateKCMastery,
-        requestHint,
-        usedHints,
-        startTimer,
-        getTimeSpent,
-        resetQuizState
-    } = useAppStore();
+  const params = useParams();
+  const { lessons, loadData } = useData();
+  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
 
-    const [lessonQuestions, setLessonQuestions] = useState<Question[]>([]);
-    const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
-    const [showResults, setShowResults] = useState(false);
+  useEffect(() => {
+    console.log('LessonPageClient mounted');
+    loadData();
+  }, [loadData]);
 
-    // Use the lesson tracking hook
-    useLessonTracking();
-
-    useEffect(() => {
-        console.log('LessonPageClient mounted');
-        loadData();
-    }, [loadData]);
-
-    useEffect(() => {
-        if (lessons.length > 0 && params.lesson_id) {
-            const lessonId = parseInt(params.lesson_id as string);
-            const lesson = lessons.find(l => l.lesson_id === lessonId);
-            setCurrentLesson(lesson || null);
-
-            if (lesson) {
-                const filteredQuestions = questions.filter(q => q.lesson_id === lessonId);
-                setLessonQuestions(filteredQuestions);
-            }
-        }
-    }, [lessons, questions, params.lesson_id, setCurrentLesson]);
-
-    const handleStartQuiz = () => {
-        if (lessonQuestions.length > 0) {
-            // Log quiz start
-            addInteraction({
-                interaction_type: 'start_test',
-                lesson_id: currentLesson?.lesson_id
-            });
-
-            setShowQuiz(true);
-            setCurrentQuestionIndex(0);
-            setQuizResults([]);
-            setShowResults(false);
-            startTimer();
-        }
-    };
-
-    const handleQuestionSubmit = (answer: string, isCorrect: boolean) => {
-        const currentQuestion = lessonQuestions[currentQuestionIndex];
-        if (!currentQuestion) return;
-
-        // Only update mastery and add to results if it's a submission (not a skip)
-        if (answer !== '') {
-            // Count hints used for this question
-            const hintsUsed = Array.from(usedHints).filter(hint =>
-                hint.startsWith(`${currentQuestion.question_id}-`)
-            ).length;
-
-            // Add to results
-            const result: QuizResult = {
-                questionId: currentQuestion.question_id,
-                questionText: currentQuestion.question_text,
-                userAnswer: answer,
-                correctAnswer: currentQuestion.correct_answer,
-                isCorrect,
-                hintsUsed,
-                scaffoldUsed: false // Track this properly in real implementation
-            };
-
-            const newResults = [...quizResults, result];
-            setQuizResults(newResults);
-
-            // Log question submission for both correct and incorrect answers
-            addInteraction({
-                interaction_type: 'question_submit',
-                question_id: currentQuestion.question_id,
-                lesson_id: currentLesson?.lesson_id,
-                student_answer: answer,
-                is_correct: isCorrect,
-                hint_level: hintsUsed
-            });
-        }
-
-        // Move to next question if answer is correct or if it was a skip
-        if (isCorrect || answer === '') {
-            if (currentQuestionIndex < lessonQuestions.length - 1) {
-                setCurrentQuestionIndex(currentQuestionIndex + 1);
-                startTimer(); // Reset timer for next question
-            } else {
-                // Log end of test
-                addInteraction({
-                    interaction_type: 'test_exit',
-                    lesson_id: currentLesson?.lesson_id
-                });
-                // Quiz complete
-                setShowResults(true);
-                setShowQuiz(false);
-            }
-        }
-    };
-
-    const handleRetakeQuiz = () => {
-        resetQuizState();
-        setQuizResults([]);
-        setShowResults(false);
-        handleStartQuiz();
-    };
-
-    const handleContinueLearning = () => {
-        resetQuizState();
-        setQuizResults([]);
-        setShowResults(false);
-        router.push('/');
-    };
-
-    const components: Components = {
-        code({ node, inline, className, children, ...props }: any) {
-            const match = /language-(\w+)/.exec(className || '');
-            return !inline && match ? (
-                <SyntaxHighlighter
-                    style={atomOneLight}
-                    language={match[1]}
-                    PreTag="div"
-                    {...props}
-                >
-                    {String(children).replace(/\n$/, '')}
-                </SyntaxHighlighter>
-            ) : (
-                <code className={className} {...props}>
-                    {children}
-                </code>
-            );
-        },
-    };
-
-    if (!currentLesson) {
-        return (
-            <ProtectedRoute>
-                <div className="container mx-auto px-4 py-8">
-                    <div className="text-center">
-                        <p className="text-gray-600">Loading lesson...</p>
-                    </div>
-                </div>
-            </ProtectedRoute>
-        );
+  useEffect(() => {
+    if (lessons.length > 0 && params.lesson_id) {
+      const lessonId = params.lesson_id as string;
+      const lesson = lessons.find(l => l.lesson_id === lessonId);
+      setCurrentLesson(lesson || null);
     }
+  }, [lessons, params.lesson_id]);
 
+  // Custom components for ReactMarkdown
+  const components: Components = {
+    code({ className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || '');
+      return !match ? (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      ) : (
+        <SyntaxHighlighter
+          style={atomOneLight}
+          language={match[1]}
+          PreTag="div"
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+      );
+    },
+  };
+
+  if (!currentLesson) {
     return (
-        <ProtectedRoute>
-            <div className="container mx-auto px-4 py-8">
-                {/* Back Button */}
-                <div className="mb-6">
-                    <Button variant="ghost" asChild className="flex items-center gap-2">
-                        <Link href={`/modules/${currentLesson.module_id}`}>
-                            <ArrowLeft className="h-4 w-4" />
-                            Back to Module
-                        </Link>
-                    </Button>
-                </div>
-
-                {showResults ? (
-                    <QuizResults
-                        results={quizResults}
-                        onRetake={handleRetakeQuiz}
-                        onContinue={handleContinueLearning}
-                    />
-                ) : showQuiz ? (
-                    <div className="space-y-6">
-                        <QuestionCard
-                            question={lessonQuestions[currentQuestionIndex]}
-                            onSubmit={handleQuestionSubmit}
-                            onHint={(level) => requestHint(lessonQuestions[currentQuestionIndex].question_id, level)}
-                            onScaffold={() => { }}
-                            usedHints={usedHints}
-                            questionNumber={currentQuestionIndex + 1}
-                            totalQuestions={lessonQuestions.length}
-                        />
-                    </div>
-                ) : (
-                    <>
-                        {/* Lesson Header */}
-                        <div className="mb-8">
-                            <Badge variant="secondary" className="mb-2">
-                                Lesson Content
-                            </Badge>
-                            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                                {currentLesson.lesson_name}
-                            </h1>
-                            <p className="text-gray-600">{currentLesson.description}</p>
-                        </div>
-
-                        {/* Lesson Content */}
-                        <Card className="mb-8">
-                            <CardContent className="prose prose-lg max-w-none p-8">
-                                <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={components}
-                                >
-                                    {currentLesson.content}
-                                </ReactMarkdown>
-                            </CardContent>
-                        </Card>
-
-                        {/* Quiz Section */}
-                        {lessonQuestions.length > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <TestTube className="h-5 w-5" />
-                                        Test Your Understanding
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-gray-600 mb-4">
-                                        Ready to test what you've learned? Take the quiz to check your understanding
-                                        and get personalized feedback.
-                                    </p>
-                                    <div className="flex items-center gap-4">
-                                        <Badge variant="outline">
-                                            {lessonQuestions.length} question{lessonQuestions.length !== 1 ? 's' : ''}
-                                        </Badge>
-                                        <Button onClick={handleStartQuiz} className="flex items-center gap-2">
-                                            <CheckCircle className="h-4 w-4" />
-                                            Start Quiz
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </>
-                )}
-            </div>
-        </ProtectedRoute>
+      <ProtectedRoute>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <p className="text-gray-600">Loading lesson...</p>
+          </div>
+        </div>
+      </ProtectedRoute>
     );
+  }
+
+  return (
+    <ProtectedRoute>
+      <div className="container mx-auto px-4 py-8">
+        {/* Back Button */}
+        <div className="mb-6">
+          <Button variant="ghost" asChild className="flex items-center gap-2">
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+        </div>
+
+        {/* Lesson Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-blue-600 p-3 rounded-lg">
+              <BookOpen className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">{currentLesson.lesson_name}</h1>
+            </div>
+          </div>
+        </div>
+
+        {/* Lesson Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Lesson Content</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="prose max-w-none">
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]} 
+                    components={components}
+                  >
+                    {currentLesson.lesson_content}
+                  </ReactMarkdown>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-4">
+            {/* Practice Button */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <TestTube className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Practice?</h3>
+                  <p className="text-gray-600 mb-4">
+                    Test your understanding with practice questions based on this lesson.
+                  </p>
+                  <Button asChild className="w-full" size="lg">
+                    <Link href={`/lessons/${currentLesson.lesson_id}/practice`}>
+                      <TestTube className="h-4 w-4 mr-2" />
+                      Start Practice Questions
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lesson Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Lesson Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Lesson ID:</span>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {currentLesson.lesson_id}
+                  </Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Content Length:</span>
+                  <span className="text-sm text-gray-900">
+                    {currentLesson.lesson_content.length} characters
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </ProtectedRoute>
+  );
 }

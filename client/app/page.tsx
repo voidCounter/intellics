@@ -4,13 +4,15 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useAppStore } from '@/lib/store';
+import { useAuthStore, useMainStore } from '@/lib/stores';
+import { useData } from '@/hooks/useData';
 import { toast } from "sonner";
 import { ProtectedRoute } from '@/components/auth/protected-route';
 
 export default function Home() {
-  const { modules, loadData, isAuthenticated } = useAppStore();
-  const resetStore = useAppStore(state => state.resetStore);
+  const { modules, loadData } = useData();
+  const { isAuthenticated } = useAuthStore();
+  const { resetAllStores } = useMainStore();
 
   useEffect(() => {
     // We only load data if the user is authenticated
@@ -20,7 +22,7 @@ export default function Home() {
   }, [loadData, isAuthenticated]);
 
   const handleReset = () => {
-    resetStore();
+    resetAllStores();
     toast.success("All data has been reset successfully!");
   };
 

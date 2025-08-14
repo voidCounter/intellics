@@ -22,6 +22,7 @@ public class SessionMapperImpl implements SessionMapper {
             .deviceType(session.getDevice_type())
             .startTime(session.getStart_time())
             .endTime(session.getEnd_time())
+            .lastActiveAt(session.getLast_active_at())
             .createdAt(session.getCreated_at())
             .updatedAt(session.getUpdated_at())
             .interactionCount(0L) // TODO: Inject UserInteractionRepository if needed

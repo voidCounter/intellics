@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { useAppStore } from '../store';
+import { useProgressStore } from '../stores';
+import { InteractionType } from '@/types/api';
 
 export function useLessonTracking() {
 	const pathname = usePathname();
-	const { addInteraction } = useAppStore();
+	const { addInteraction } = useProgressStore();
 	const lastLessonIdRef = useRef<number | null>(null);
 	const startTimeRef = useRef<number | null>(null);
 
@@ -23,16 +24,16 @@ export function useLessonTracking() {
 					const timeSpent = Date.now() - startTimeRef.current;
 					if (timeSpent > 10000) {
 						addInteraction({
-							interaction_type: 'lesson_exit',
-							lesson_id: lastLessonIdRef.current
+							interaction_type: InteractionType.LESSON_EXIT,
+							lesson_id: lastLessonIdRef.current.toString()
 						});
 					}
 				}
 
 				// Log the start of the new lesson
 				addInteraction({
-					interaction_type: 'lesson_start',
-					lesson_id: lessonId
+					interaction_type: InteractionType.LESSON_START,
+					lesson_id: lessonId.toString()
 				});
 
 				lastLessonIdRef.current = lessonId;
@@ -43,8 +44,8 @@ export function useLessonTracking() {
 			if (timeSpent > 10000) {
 				console.log('Logging lesson exit');
 				addInteraction({
-					interaction_type: 'lesson_exit',
-					lesson_id: lastLessonIdRef.current
+					interaction_type: InteractionType.LESSON_EXIT,
+					lesson_id: lastLessonIdRef.current.toString()
 				});
 			}
 			lastLessonIdRef.current = null;
@@ -57,8 +58,8 @@ export function useLessonTracking() {
 				const timeSpent = Date.now() - startTimeRef.current;
 				if (timeSpent > 10000) {
 					addInteraction({
-						interaction_type: 'lesson_exit',
-						lesson_id: lastLessonIdRef.current
+						interaction_type: InteractionType.LESSON_EXIT,
+						lesson_id: lastLessonIdRef.current.toString()
 					});
 				}
 			}

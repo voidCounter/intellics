@@ -7,7 +7,7 @@ import { CheckCircle, XCircle, Trophy, RotateCcw } from 'lucide-react';
 import { formatTimestamp } from '@/lib/utils';
 
 interface QuizResult {
-  questionId: number;
+  questionId: string;
   questionText: string;
   userAnswer: string;
   correctAnswer: string;

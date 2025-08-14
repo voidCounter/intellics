@@ -20,6 +20,7 @@ public class SessionDto {
     private String deviceType;
     private Instant startTime;
     private Instant endTime;
+    private Instant lastActiveAt;
     private Instant createdAt;
     private Instant updatedAt;
     

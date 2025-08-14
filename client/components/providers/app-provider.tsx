@@ -1,30 +1,17 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useAppStore } from '@/lib/store';
+import { useAuthStore } from '@/lib/stores';
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-	const { createSession, endSession, checkAuth } = useAppStore();
-
+	const { checkAuth, isAuthenticated, user } = useAuthStore();
+	
 	useEffect(() => {
-		// Check authentication status when app loads
-		checkAuth();
-
-		// Create session when app loads
-		createSession();
-
-		// End session when user leaves
-		const handleBeforeUnload = () => {
-			endSession();
-		};
-
-		window.addEventListener('beforeunload', handleBeforeUnload);
-
-		return () => {
-			window.removeEventListener('beforeunload', handleBeforeUnload);
-			endSession();
-		};
-	}, [checkAuth, createSession, endSession]);
+		// Check authentication status when app loads, but only if not already authenticated
+		if (!isAuthenticated && !user) {
+			checkAuth();
+		}
+	}, [checkAuth, isAuthenticated, user]);
 
 	return <>{children}</>;
 }

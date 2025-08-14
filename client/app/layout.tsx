@@ -1,15 +1,8 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { IBM_Plex_Sans } from 'next/font/google';
 import { Toaster } from "@/components/ui/sonner"
 import { Navbar } from '@/components/layout/navbar';
 import { AppProvider } from '@/components/providers/app-provider';
-
-const ibmPlexSans = IBM_Plex_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-ibm-plex-sans',
-});
 
 export const metadata: Metadata = {
   title: 'Intellics - Intelligent Tutoring System',
@@ -22,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={ibmPlexSans.variable}>
+    <html lang="en">
       <body className="font-sans">
         <AppProvider>
           <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">

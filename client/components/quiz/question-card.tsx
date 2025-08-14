@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { HelpCircle, Lightbulb, ArrowRight } from 'lucide-react';
-import { Question, Scaffold } from '@/lib/store';
+import { Question, Scaffold, InteractionType } from '@/types/api';
 import { ScaffoldCard } from './scaffold-card';
 import { toast } from 'sonner';
 import {
@@ -17,7 +17,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useAppStore } from '@/lib/store';
+import { useLearningStore, useProgressStore } from '@/lib/stores';
 
 interface QuestionCardProps {
   question: Question;
@@ -38,10 +38,8 @@ export function QuestionCard({
   questionNumber,
   totalQuestions
 }: QuestionCardProps) {
-  const {
-    addInteraction,
-    currentLesson
-  } = useAppStore();
+  const { currentLesson } = useLearningStore();
+  const { addInteraction } = useProgressStore();
 
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [writtenAnswer, setWrittenAnswer] = useState('');
@@ -79,9 +77,15 @@ export function QuestionCard({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const answer = question.question_type === 'multiple_choice' ? selectedAnswer : writtenAnswer;
+    const answer = question.type === 'MULTIPLE_CHOICE' ? selectedAnswer : writtenAnswer;
     if (!answer.trim()) return;
-    const isCorrect = answer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
+    
+    let isCorrect = false;
+    if (question.type === 'MULTIPLE_CHOICE') {
+      isCorrect = answer === question.correct_option_key;
+    } else {
+      isCorrect = answer.toLowerCase().trim() === question.correct_answer_text.toLowerCase().trim();
+    }
 
     if (isCorrect) {
       toast.success("Correct! Great job! Moving to the next question.");
@@ -95,7 +99,7 @@ export function QuestionCard({
   const handleSkip = () => {
     // Log skip interaction
     addInteraction({
-      interaction_type: 'skip_question',
+      interaction_type: InteractionType.LESSON_EXIT, // Using closest available type
       question_id: question.question_id,
       lesson_id: currentLesson?.lesson_id
     });
@@ -121,9 +125,9 @@ export function QuestionCard({
   const handleScaffoldSubmit = (scaffoldData: Scaffold, answer: string, isCorrect: boolean, scaffoldIndex: number) => {
     // Log scaffold answer
     addInteraction({
-      interaction_type: 'scaffold_answer',
-      scaffold_id: scaffoldData.scaffold_id,
-      question_id: scaffoldData.question_id,
+      interaction_type: InteractionType.SCAFFOLD_ANSWER,
+      scaffold_id: scaffoldData.scaffoldId,
+      question_id: question.question_id,
       lesson_id: currentLesson?.lesson_id,
       student_answer: answer,
       is_correct: isCorrect
@@ -144,17 +148,17 @@ export function QuestionCard({
     }
   };
 
-  const handleScaffoldView = (scaffoldId: number) => {
+  const handleScaffoldView = (scaffoldId: string) => {
     // Log scaffold view
     addInteraction({
-      interaction_type: 'scaffold_request',
+      interaction_type: InteractionType.SCAFFOLD_ANSWER, // Using closest available type
       scaffold_id: scaffoldId,
       question_id: question.question_id,
       lesson_id: currentLesson?.lesson_id
     });
   };
 
-  const canSubmit = question.question_type === 'multiple_choice'
+  const canSubmit = question.type === 'MULTIPLE_CHOICE'
     ? selectedAnswer !== ''
     : writtenAnswer.trim() !== '';
 
@@ -179,13 +183,13 @@ export function QuestionCard({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {question.question_type === 'multiple_choice' ? (
+        {question.type === 'MULTIPLE_CHOICE' ? (
           <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
-            {question.options?.map((option, index) => (
+            {question.options?.map((option: any, index: number) => (
               <div key={index} className="flex items-center space-x-2">
-                <RadioGroupItem value={option} id={`option-${index}-${question.question_id}`} />
+                <RadioGroupItem value={option.option_key} id={`option-${index}-${question.question_id}`} />
                 <Label htmlFor={`option-${index}-${question.question_id}`} className="flex-1 cursor-pointer">
-                  {option}
+                  {option.option_text}
                 </Label>
               </div>
             ))}
@@ -269,14 +273,14 @@ export function QuestionCard({
                 setActiveScaffoldValue(value);
                 if (value) {
                   const scaffoldIndex = parseInt(value.split('-')[1]);
-                  handleScaffoldView(scaffolds[scaffoldIndex].scaffold_id);
+                  handleScaffoldView(scaffolds[scaffoldIndex].scaffoldId);
                 }
               }}
             >
               {scaffolds.map((scaffold, idx) => (
                 <AccordionItem
                   value={`scaffold-${idx}`}
-                  key={scaffold.scaffold_id}
+                  key={scaffold.scaffoldId}
                   disabled={idx > unlockedScaffoldIndex}
                 >
                   <AccordionTrigger disabled={idx > unlockedScaffoldIndex}>

@@ -19,6 +19,7 @@ public class UserSessionDto {
     private String deviceType;
     private Instant startTime;
     private Instant endTime;
+    private Instant lastActiveAt; // Add this field for heartbeat tracking
     private Instant createdAt;
     private Instant updatedAt;
     

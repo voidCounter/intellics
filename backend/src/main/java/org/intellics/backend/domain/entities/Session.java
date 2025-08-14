@@ -48,6 +48,9 @@ public class Session {
     @Column(name = "end_time")
     private Instant end_time;
     
+    @Column(name = "last_active_at")
+    private Instant last_active_at;
+    
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant created_at;

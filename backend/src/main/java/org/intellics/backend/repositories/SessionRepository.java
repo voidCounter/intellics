@@ -18,4 +18,30 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
      */
     @Query("SELECT s FROM Session s WHERE s.user.user_id = :userId ORDER BY s.start_time DESC")
     List<Session> findByUserId(@Param("userId") UUID userId);
+    
+    /**
+     * Find all active sessions that haven't been active since the given time
+     * Used for cleanup of inactive sessions
+     */
+    @Query("SELECT s FROM Session s WHERE s.end_time IS NULL AND s.last_active_at < :cutoffTime")
+    List<Session> findActiveSessionsByLastActiveBefore(@Param("cutoffTime") java.time.Instant cutoffTime);
+    
+    /**
+     * Count active sessions that haven't been active since the given time
+     * Used for monitoring inactive session count
+     */
+    @Query("SELECT COUNT(s) FROM Session s WHERE s.end_time IS NULL AND s.last_active_at < :cutoffTime")
+    long countActiveSessionsByLastActiveBefore(@Param("cutoffTime") java.time.Instant cutoffTime);
+    
+    /**
+     * Find active session for a specific user, device type, and user agent
+     * Used for get-or-create session logic to prevent duplicates
+     */
+    @Query("SELECT s FROM Session s WHERE s.user.user_id = :userId AND s.device_type = :deviceType AND s.user_agent = :userAgent AND s.end_time IS NULL AND s.last_active_at > :cutoffTime ORDER BY s.last_active_at DESC LIMIT 1")
+    Session findByUserIdAndDeviceTypeAndUserAgentAndEndTimeIsNullAndLastActiveAtAfter(
+        @Param("userId") UUID userId, 
+        @Param("deviceType") String deviceType, 
+        @Param("userAgent") String userAgent,
+        @Param("cutoffTime") java.time.Instant cutoffTime
+    );
 }
