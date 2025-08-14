@@ -4,19 +4,27 @@ import { getDeviceTypeForBackend } from '@/lib/utils/server-device-detection';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, lessonId, moduleId } = body;
+    const { userAgent, deviceType } = body;
+
+    // Get the auth token from the request headers
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: 'Authorization header is required' },
+        { status: 401 }
+      );
+    }
 
     const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8080';
     const backendResponse = await fetch(`${backendUrl}/api/v1/sessions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': authHeader,
       },
       body: JSON.stringify({
-        userId,
-        lessonId,
-        moduleId,
-        startTime: new Date().toISOString(),
+        userAgent,
+        deviceType,
       }),
     });
 

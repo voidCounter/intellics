@@ -4,39 +4,59 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Home, User, LogOut, Settings, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/lib/stores';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 
 export function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const { isAdminMode, setAdminMode } = useAuthStore();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const isAdmin = user?.roles?.some(role => role.name === 'ROLE_ADMIN');
+  
+  // Determine if we're actually in admin mode based on current route
+  const isActuallyInAdminMode = pathname.startsWith('/admin');
 
-  const handleAdminToggle = (value: string) => {
-    if (value === 'admin') {
-      // Double-check admin role for security
+  const handleAdminToggle = (checked: boolean) => {
+    if (checked) {
+      // Switch to admin mode
       if (isAdmin) {
         setAdminMode(true);
+        // Navigate to admin dashboard if not already there
+        if (!pathname.startsWith('/admin')) {
+          router.push('/admin');
+        }
       }
     } else {
+      // Switch to user mode
       setAdminMode(false);
+      // Navigate to home page when switching to user mode
+      router.push('/');
     }
   };
 
+  // Sync the store state with the actual route when component mounts or route changes
+  useEffect(() => {
+    if (isAdmin) {
+      setAdminMode(isActuallyInAdminMode);
+    }
+  }, [pathname, isAdmin, setAdminMode]);
+
   return (
     <nav className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center space-x-2">
             <Image
@@ -75,19 +95,13 @@ export function Navbar() {
                     {/* Admin Mode Toggle */}
                     {isAdmin && (
                       <>
-                        <DropdownMenuLabel className="text-xs text-muted-foreground">
-                          Admin Mode
-                        </DropdownMenuLabel>
-                        <DropdownMenuRadioGroup value={isAdminMode ? 'admin' : 'user'} onValueChange={handleAdminToggle}>
-                          <DropdownMenuRadioItem value="user">
-                            <User className="h-4 w-4 mr-2" />
-                            User Mode
-                          </DropdownMenuRadioItem>
-                          <DropdownMenuRadioItem value="admin">
-                            <Settings className="h-4 w-4 mr-2" />
-                            Admin Mode
-                          </DropdownMenuRadioItem>
-                        </DropdownMenuRadioGroup>
+                        <div className="flex items-center justify-between px-2 py-1.5">
+                          <span className="text-sm">Admin Mode</span>
+                          <Switch
+                            checked={isActuallyInAdminMode}
+                            onCheckedChange={handleAdminToggle}
+                          />
+                        </div>
                         <DropdownMenuSeparator />
                       </>
                     )}
