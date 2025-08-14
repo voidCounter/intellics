@@ -1,10 +1,8 @@
-# IntelliCS: Intelligent Tutoring System for Computer Science
-
 <div align="center">
 
-<div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px;">
-  <img src="public/logo.svg" alt="IntelliCS Logo" width="48" height="48" />
-  <h1 style="margin: 0; font-size: 2.5em; color: #2463eb;">IntelliCS</h1>
+<div style="display: flex; flex-flow: row nowrap; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px;">
+  <img src="client/public/logo.svg" alt="IntelliCS Logo" width="48" height="48" />
+  <h1 style="margin: 0; font-size: 2.5em; color: #2463eb;">IntelliCS: Intelligent Tutoring System for Computer Science</h1>
 </div>
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-black.svg)](https://opensource.org/licenses/Apache-2.0)
