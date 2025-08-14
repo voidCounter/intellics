@@ -4,6 +4,7 @@ import org.intellics.backend.security.CustomOAuth2UserService;
 import org.intellics.backend.security.JwtAuthenticationFilter;
 import org.intellics.backend.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,6 +23,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Value("${app.frontend.url:http://localhost:3000}")
+    private String frontendUrl;
 
     @Autowired
     private CustomOAuth2UserService customOAuth2UserService;
@@ -81,9 +85,9 @@ public class SecurityConfig {
                 // Get the user ID from ThreadLocal
                 String userId = CustomOAuth2UserService.getCurrentUserId();
                 String jwt = tokenProvider.generateToken(userId);
-                response.sendRedirect("http://localhost:3000/auth?token=" + jwt);
+                response.sendRedirect(frontendUrl + "/auth?token=" + jwt);
             } else {
-                response.sendRedirect("http://localhost:3000/auth");
+                response.sendRedirect(frontendUrl + "/auth");
             }
         };
     }

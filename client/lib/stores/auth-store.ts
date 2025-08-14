@@ -38,7 +38,7 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
 
-          const response = await fetch('http://localhost:8080/api/v1/users/me', {
+          const response = await fetch('/api/users/me', {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',

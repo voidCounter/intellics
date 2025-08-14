@@ -23,6 +23,8 @@ springdoc:
 
 app:
   jwtExpirationInMs: 86400000 # 24 hours
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
   session:
     cleanup:
       intervalMinutes: 5 # Run cleanup every 5 minute (optimized for 15s heartbeats)

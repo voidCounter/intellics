@@ -49,8 +49,8 @@ function AuthComponent() {
   };
 
   const handleLogin = () => {
-    // Redirect to the Spring Boot backend's Google OAuth2 endpoint
-    router.push("http://localhost:8080/oauth2/authorization/google");
+    // Redirect to our Next.js API route which will then redirect to the backend
+    router.push("/api/auth/oauth");
   };
 
   return (
