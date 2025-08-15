@@ -18,7 +18,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="font-sans">
         <AppProvider>
-          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+          <div className="min-h-screen">
             <Navbar />
             <Toaster richColors />
             <main>{children}</main>

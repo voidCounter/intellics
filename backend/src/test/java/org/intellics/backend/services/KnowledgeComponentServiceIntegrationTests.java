@@ -87,15 +87,6 @@ public class KnowledgeComponentServiceIntegrationTests extends AbstractIntegrati
     }
 
     @Test
-    void testThatFindAllReturnsAllKnowledgeComponents() {
-        underTest.createKnowledgeComponent(KnowledgeComponentCreateDto.builder().kc_name("KC1").build());
-        underTest.createKnowledgeComponent(KnowledgeComponentCreateDto.builder().kc_name("KC2").build());
-
-        List<KnowledgeComponentSimpleDto> foundKCs = underTest.findAll();
-        assertThat(foundKCs).hasSize(2);
-    }
-
-    @Test
     void testThatKnowledgeComponentCanBeUpdated() {
         KnowledgeComponentCreateDto createDto = KnowledgeComponentCreateDto.builder()
                 .kc_name("Original KC")

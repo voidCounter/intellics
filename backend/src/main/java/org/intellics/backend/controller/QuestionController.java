@@ -1,6 +1,7 @@
 package org.intellics.backend.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -10,6 +11,8 @@ import org.intellics.backend.api.PaginatedResponseDto;
 import org.intellics.backend.domain.dto.QuestionDto;
 import org.intellics.backend.domain.dto.QuestionKCMappingDto;
 import org.intellics.backend.domain.dto.QuestionKCMappingRequestDto;
+import org.intellics.backend.domain.dto.QuestionKCMappingPatchDto;
+import org.intellics.backend.domain.dto.QuestionTitleDto;
 import org.intellics.backend.domain.dto.ScaffoldDto;
 import org.intellics.backend.domain.dto.ScaffoldReorderDto;
 import org.intellics.backend.domain.entities.QuestionEntity;
@@ -26,12 +29,15 @@ import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 
 @RestController
 @RequestMapping("/api/v1/questions")
@@ -69,20 +75,35 @@ public class QuestionController {
         );
     }
     
-    @Operation(summary = "Get all questions", description = "Retrieves a paginated list of all questions")
+    @Operation(summary = "Get all questions", description = "Retrieves a paginated list of all questions. Use titlesOnly=true for lightweight data suitable for dropdowns.")
     @GetMapping
-    public ResponseEntity<ApiResponseDto<PaginatedResponseDto<QuestionDto>>> getQuestions(Pageable pageable) {
-        Page<QuestionEntity> result = questionService.findAll(pageable);
-        Page<QuestionDto> questionDtos = result.map(questionMapper::mapTo);
-        PaginatedResponseDto<QuestionDto> paginatedResponse = PaginatedResponseDto.from(questionDtos);
+    public ResponseEntity<ApiResponseDto<?>> getQuestions(
+            @Parameter(description = "If true, returns only question titles (ID and text) for efficient dropdown usage") 
+            @RequestParam(required = false, defaultValue = "false") boolean titlesOnly,
+            Pageable pageable) {
         
-        return ResponseEntity.ok(
-            ApiResponseDto.<PaginatedResponseDto<QuestionDto>>builder()
-                .status(ApiResponseStatus.SUCCESS)
-                .message("Questions retrieved successfully")
-                .data(paginatedResponse)
-                .build()
-        );
+        if (titlesOnly) {
+            List<QuestionTitleDto> titles = questionService.getQuestionTitles();
+            return ResponseEntity.ok(
+                ApiResponseDto.<List<QuestionTitleDto>>builder()
+                    .status(ApiResponseStatus.SUCCESS)
+                    .message("Question titles retrieved successfully")
+                    .data(titles)
+                    .build()
+            );
+        } else {
+            Page<QuestionEntity> result = questionService.findAll(pageable);
+            Page<QuestionDto> questionDtos = result.map(questionMapper::mapTo);
+            PaginatedResponseDto<QuestionDto> paginatedResponse = PaginatedResponseDto.from(questionDtos);
+            
+            return ResponseEntity.ok(
+                ApiResponseDto.<PaginatedResponseDto<QuestionDto>>builder()
+                    .status(ApiResponseStatus.SUCCESS)
+                    .message("Questions retrieved successfully")
+                    .data(paginatedResponse)
+                    .build()
+            );
+        }
     }
     
     @Operation(summary = "Get question by ID", description = "Retrieves a specific question by its ID")
@@ -166,6 +187,21 @@ public class QuestionController {
         );
     }
     
+    @PatchMapping("/{questionId}/kcs/{kcId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Update question knowledge component weight", description = "Updates the weight value for a KC in a question")
+    public ResponseEntity<ApiResponseDto<QuestionKCMappingDto>> updateQuestionKCWeight(
+            @PathVariable("questionId") UUID questionId,
+            @PathVariable("kcId") UUID kcId,
+            @Validated @RequestBody QuestionKCMappingPatchDto patchDto) {
+        QuestionKCMappingDto updatedMapping = questionKCMappingService.updateQuestionKCWeight(questionId, kcId, patchDto.getWeight());
+        return ResponseEntity.ok(
+            ApiResponseDto.<QuestionKCMappingDto>builder().status(ApiResponseStatus.SUCCESS).message(
+                    "Question KC weight updated successfully").data(updatedMapping)
+                .build()
+        );
+    }
+
     @Operation(summary = "Remove question knowledge component mapping", description = "ADMIN-only endpoint to remove a mapping between a question and knowledge component")
     @DeleteMapping("/{questionId}/kcs/{kcId}")
     @PreAuthorize("hasRole('ADMIN')")

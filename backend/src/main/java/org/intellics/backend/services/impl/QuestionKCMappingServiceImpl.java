@@ -14,6 +14,7 @@ import org.intellics.backend.services.QuestionKCMappingService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -78,6 +79,27 @@ public class QuestionKCMappingServiceImpl implements QuestionKCMappingService {
         return questionKCMappingMapper.mapTo(savedMapping);
     }
     
+    @Override
+    public QuestionKCMappingDto updateQuestionKCWeight(UUID questionId, UUID kcId, BigDecimal weight) {
+        // Validate weight
+        if (weight.compareTo(BigDecimal.ZERO) < 0 || weight.compareTo(new BigDecimal("1.00")) > 0) {
+            throw new IllegalArgumentException("Weight must be between 0 and 1");
+        }
+
+        QuestionKCMappingId mappingId = QuestionKCMappingId.builder()
+            .question_id(questionId)
+            .kc_id(kcId)
+            .build();
+
+        QuestionKCMapping mapping = questionKCMappingRepository.findById(mappingId)
+            .orElseThrow(() -> new ItemNotFoundException("Question-KC mapping not found"));
+
+        mapping.setWeight(weight.doubleValue());
+        QuestionKCMapping updatedMapping = questionKCMappingRepository.save(mapping);
+        
+        return questionKCMappingMapper.mapTo(updatedMapping);
+    }
+
     @Override
     public void removeKCFromQuestion(UUID questionId, UUID kcId) {
         if (!questionKCMappingRepository.existsByQuestionIdAndKcId(questionId, kcId)) {

@@ -13,7 +13,12 @@ import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentCre
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentPatchDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentSimpleDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentUpdateDto;
+import org.intellics.backend.domain.dto.KnowledgeComponentWithRelationshipsDto;
+import org.intellics.backend.api.PaginatedResponseDto;
 import org.intellics.backend.services.KnowledgeComponentService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -50,14 +55,53 @@ public class KnowledgeComponentController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all knowledge components", description = "Retrieves all available knowledge components")
+    @Operation(summary = "Get all knowledge components", description = "Retrieves all available knowledge components with optional relationships and pagination")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Knowledge components retrieved successfully",
                     content = @Content(schema = @Schema(implementation = ApiResponseDto.class)))
     })
-    public ResponseEntity<ApiResponseDto<List<KnowledgeComponentSimpleDto>>> getAllKnowledgeComponents() {
-        List<KnowledgeComponentSimpleDto> knowledgeComponents = knowledgeComponentService.findAll();
-        return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, knowledgeComponents, "Knowledge Components retrieved successfully."), HttpStatus.OK);
+    public ResponseEntity<ApiResponseDto<?>> getAllKnowledgeComponents(
+            @Parameter(description = "Include relationships (modules, lessons, questions)")
+            @RequestParam(required = false, defaultValue = "false") boolean include,
+            
+            @Parameter(description = "Pagination parameters (page, size, sort)")
+            @PageableDefault(size = 20) Pageable pageable) {
+        
+        if (include) {
+            // Return paginated KCs with relationships
+            Page<KnowledgeComponentWithRelationshipsDto> kcPage = knowledgeComponentService.findAllWithRelationshipsPaginated(pageable);
+            
+            PaginatedResponseDto<KnowledgeComponentWithRelationshipsDto> response = PaginatedResponseDto.<KnowledgeComponentWithRelationshipsDto>builder()
+                    .content(kcPage.getContent())
+                    .page(kcPage.getNumber())
+                    .size(kcPage.getSize())
+                    .totalPages(kcPage.getTotalPages())
+                    .totalElements(kcPage.getTotalElements())
+                    .first(kcPage.isFirst())
+                    .last(kcPage.isLast())
+                    .empty(kcPage.isEmpty())
+                    .build();
+
+            return ResponseEntity.ok(
+                    new ApiResponseDto<>(ApiResponseStatus.SUCCESS, response, "Paginated Knowledge Components with relationships retrieved successfully."));
+        } else {
+            // Return simple paginated KCs without relationships
+            Page<KnowledgeComponentSimpleDto> kcPage = knowledgeComponentService.findAllPaginated(pageable);
+            
+            PaginatedResponseDto<KnowledgeComponentSimpleDto> response = PaginatedResponseDto.<KnowledgeComponentSimpleDto>builder()
+                    .content(kcPage.getContent())
+                    .page(kcPage.getNumber())
+                    .size(kcPage.getSize())
+                    .totalPages(kcPage.getTotalPages())
+                    .totalElements(kcPage.getTotalElements())
+                    .first(kcPage.isFirst())
+                    .last(kcPage.isLast())
+                    .empty(kcPage.isEmpty())
+                    .build();
+
+            return ResponseEntity.ok(
+                    new ApiResponseDto<>(ApiResponseStatus.SUCCESS, response, "Paginated Knowledge Components retrieved successfully."));
+        }
     }
 
     @GetMapping(path = "/{id}")

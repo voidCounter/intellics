@@ -1,8 +1,13 @@
 package org.intellics.backend.services.impl;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.intellics.backend.api.error.exceptions.ItemNotFoundException;
+import org.intellics.backend.domain.dto.QuestionTitleDto;
 import org.intellics.backend.domain.entities.QuestionEntity;
+import org.intellics.backend.domain.dto.QuestionTitleProjection;
 import org.intellics.backend.repositories.QuestionRepository;
 import org.intellics.backend.services.QuestionService;
 import org.springframework.data.domain.Page;
@@ -27,6 +32,16 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public Page<QuestionEntity> findAll(Pageable pageable) {
         return questionRepository.findAll(pageable);
+    }
+    
+    @Override
+    public List<QuestionTitleDto> getQuestionTitles() {
+        return questionRepository.findQuestionTitlesOnly().stream()
+                .map(projection -> QuestionTitleDto.builder()
+                        .question_id(projection.getQuestion_id())
+                        .question_text(projection.getQuestion_text())
+                        .build())
+                .collect(Collectors.toList());
     }
     
     @Override

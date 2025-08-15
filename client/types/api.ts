@@ -35,11 +35,28 @@ export interface Lesson {
   lesson_content: string;
 }
 
+// Lesson title only (for dropdowns)
+export interface LessonTitle {
+  lesson_id: string;
+  lesson_name: string;
+}
+
 // Question types matching backend QuestionDto hierarchy
 export interface QuestionOption {
   option_key: string; // Single uppercase letter (A-Z)
   option_text: string;
   option_explanation?: string;
+}
+
+// Question title only (for dropdowns)
+export interface QuestionTitle {
+  question_id: string;
+  question_text: string;
+}
+
+export interface ModuleTitle {
+  module_id: string;
+  module_name: string;
 }
 
 // These are now defined above with BaseQuestion
@@ -80,6 +97,27 @@ export interface KnowledgeComponent {
   kc_id: string;
   kc_name: string;
   description: string;
+}
+
+// Knowledge Component with relationships for data table
+export interface KnowledgeComponentWithRelationships {
+  kc_id: string;
+  kc_name: string;
+  description: string;
+  linkedModules: Array<{
+    module_id: string;
+    module_name: string;
+  }>;
+  linkedLessons: Array<{
+    lesson_id: string;
+    lesson_name: string;
+    target_mastery: number;
+  }>;
+  linkedQuestions: Array<{
+    question_id: string;
+    question_text: string;
+    weight: number;
+  }>;
 }
 
 // KC Mastery types matching backend StudentKCMastery entity

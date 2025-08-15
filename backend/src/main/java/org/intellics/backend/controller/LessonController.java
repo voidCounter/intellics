@@ -14,6 +14,7 @@ import org.intellics.backend.domain.dto.LessonKCMappingDto;
 import org.intellics.backend.domain.dto.LessonKCMappingPatchDto;
 import org.intellics.backend.domain.dto.LessonKCLinkRequestDto;
 import org.intellics.backend.domain.dto.LessonWithKCsDto;
+import org.intellics.backend.domain.dto.LessonTitleDto;
 import org.intellics.backend.services.LessonService;
 import org.intellics.backend.services.LessonKCMappingService;
 import org.springframework.http.HttpStatus;
@@ -65,14 +66,22 @@ public class LessonController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all lessons", description = "Retrieves all available lessons")
+    @Operation(summary = "Get all lessons", description = "Retrieves all available lessons. Use titlesOnly=true for lightweight data suitable for dropdowns.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lessons retrieved successfully",
                     content = @Content(schema = @Schema(implementation = ApiResponseDto.class)))
     })
-    public ResponseEntity<ApiResponseDto<List<LessonDto>>> getAllLessons() {
-        List<LessonDto> lessons = lessonService.getAllLessons();
-        return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, lessons, "Lessons retrieved successfully."), HttpStatus.OK);
+    public ResponseEntity<ApiResponseDto<?>> getAllLessons(
+            @Parameter(description = "If true, returns only lesson titles (ID and name) for efficient dropdown usage") 
+            @RequestParam(required = false, defaultValue = "false") boolean titlesOnly) {
+        
+        if (titlesOnly) {
+            List<LessonTitleDto> titles = lessonService.getLessonTitles();
+            return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, titles, "Lesson titles retrieved successfully."), HttpStatus.OK);
+        } else {
+            List<LessonDto> lessons = lessonService.getAllLessons();
+            return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, lessons, "Lessons retrieved successfully."), HttpStatus.OK);
+        }
     }
 
     @PostMapping

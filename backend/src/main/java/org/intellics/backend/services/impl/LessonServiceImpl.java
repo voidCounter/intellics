@@ -3,6 +3,8 @@ package org.intellics.backend.services.impl;
 import org.intellics.backend.api.error.exceptions.ItemNotFoundException;
 import org.intellics.backend.domain.dto.LessonDto;
 import org.intellics.backend.domain.dto.LessonWithKCsDto;
+import org.intellics.backend.domain.dto.LessonTitleDto;
+import org.intellics.backend.domain.dto.LessonTitleProjection;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentSimpleDto;
 import org.intellics.backend.domain.entities.Lesson;
 import org.intellics.backend.mappers.Mapper;
@@ -82,6 +84,15 @@ public class LessonServiceImpl implements LessonService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<LessonTitleDto> getLessonTitles() {
+        return lessonRepository.findLessonTitlesOnly().stream()
+                .map(projection -> LessonTitleDto.builder()
+                        .lesson_id(projection.getLesson_id())
+                        .lesson_name(projection.getLesson_name())
+                        .build())
+                .collect(Collectors.toList());
+    }
 
 
     @Override
