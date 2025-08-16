@@ -9,6 +9,7 @@ import { Edit, Eye, Trash2, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 // Utility function to truncate text to a word limit
 const truncateText = (text: string, wordLimit: number = 15): string => {
@@ -262,14 +263,16 @@ export default function ModulesPage() {
                     <Edit className="h-3.5 w-3.5 mr-1.5" />
                     Edit
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-3"
-                  >
-                    <Eye className="h-3.5 w-3.5 mr-1.5" />
-                    View
-                  </Button>
+                  <Link href={`/admin/modules/${module.module_id}`}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-3"
+                    >
+                      <Eye className="h-3.5 w-3.5 mr-1.5" />
+                      View
+                    </Button>
+                  </Link>
                 </div>
                 <Button
                   variant="ghost"

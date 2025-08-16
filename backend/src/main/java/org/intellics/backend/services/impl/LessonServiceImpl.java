@@ -61,9 +61,15 @@ public class LessonServiceImpl implements LessonService {
                 .lesson_content(lesson.getLesson_content())
                 .knowledgeComponents(kcMappings.stream()
                         .map(mapping -> {
-                            // Get KC details
-                            KnowledgeComponentSimpleDto kcDetails = knowledgeComponentService.findOne(mapping.getKcId())
-                                    .orElseThrow(() -> new ItemNotFoundException("Knowledge Component not found with id: " + mapping.getKcId()));
+                            // Get KC details - filter out inactive/deleted KCs
+                            var kcOptional = knowledgeComponentService.findOne(mapping.getKcId());
+                            if (kcOptional.isEmpty()) {
+                                // Log inactive/deleted KC for debugging
+                                System.out.println("Warning: KC not found (likely inactive/deleted): " + mapping.getKcId());
+                                return null;
+                            }
+                            
+                            var kcDetails = kcOptional.get();
                             return LessonWithKCsDto.LessonKCInfoDto.builder()
                                     .kcId(mapping.getKcId())
                                     .kcName(kcDetails.getKc_name())
@@ -71,6 +77,7 @@ public class LessonServiceImpl implements LessonService {
                                     .targetMastery(mapping.getTargetMastery())
                                     .build();
                         })
+                        .filter(kcInfo -> kcInfo != null) // Filter out null entries
                         .collect(java.util.stream.Collectors.toList()))
                 .build();
         

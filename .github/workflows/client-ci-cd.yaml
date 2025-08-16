@@ -39,15 +39,18 @@ jobs:
     defaults:
       run:
         working-directory: client
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
       # - name: Run Unit Tests
       #   run: npm test -- --passWithNoTests
       # - name: Check for test errors
@@ -79,7 +82,7 @@ jobs:
         with:
           node-version: '18'
       - name: Install Vercel CLI
-        run: npm install -g vercel@latest
+        run: npm install -g vercel@latest --legacy-peer-deps
       - uses: actions/download-artifact@v4
         with:
           name: web-build

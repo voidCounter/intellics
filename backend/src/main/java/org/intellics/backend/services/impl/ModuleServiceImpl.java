@@ -120,6 +120,7 @@ public class ModuleServiceImpl implements ModuleService {
                 .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + moduleId));
 
         return moduleKCMappingRepository.findByModule(module).stream()
+                .filter(mapping -> mapping.getKnowledgeComponent().getIsActive()) // Only include active KCs
                 .map(mapping -> {
                     KnowledgeComponent kc = mapping.getKnowledgeComponent();
                     KnowledgeComponentPrerequisiteDto dto = KnowledgeComponentPrerequisiteDto.builder()
@@ -128,6 +129,7 @@ public class ModuleServiceImpl implements ModuleService {
                             .description(kc.getDescription())
                             .prerequisiteKcIds(mapping.getPrerequisiteKnowledgeComponents() != null && !mapping.getPrerequisiteKnowledgeComponents().isEmpty() 
                                 ? mapping.getPrerequisiteKnowledgeComponents().stream()
+                                    .filter(prereqKc -> prereqKc.getIsActive()) // Only include active prerequisite KCs
                                     .map(KnowledgeComponent::getKc_id)
                                     .collect(Collectors.toList())
                                 : List.of())
@@ -144,6 +146,7 @@ public class ModuleServiceImpl implements ModuleService {
 
         return moduleKCMappingRepository.findByModule(module).stream()
                 .filter(mapping -> mapping.getKnowledgeComponent().getKc_id().equals(kcId))
+                .filter(mapping -> mapping.getKnowledgeComponent().getIsActive()) // Only include active KCs
                 .findFirst()
                 .map(mapping -> {
                     KnowledgeComponent kc = mapping.getKnowledgeComponent();
@@ -153,6 +156,7 @@ public class ModuleServiceImpl implements ModuleService {
                             .description(kc.getDescription())
                             .prerequisiteKcIds(mapping.getPrerequisiteKnowledgeComponents() != null && !mapping.getPrerequisiteKnowledgeComponents().isEmpty() 
                                 ? mapping.getPrerequisiteKnowledgeComponents().stream()
+                                    .filter(prereqKc -> prereqKc.getIsActive()) // Only include active prerequisite KCs
                                     .map(KnowledgeComponent::getKc_id)
                                     .collect(Collectors.toList())
                                 : List.of())

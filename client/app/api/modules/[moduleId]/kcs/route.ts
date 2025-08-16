@@ -4,7 +4,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { lessonId: string } }
+  { params }: { params: { moduleId: string } }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -16,7 +16,7 @@ export async function GET(
     }
 
     // Forward the request to the backend
-    const response = await fetch(`${BACKEND_URL}/api/v1/lessons/${params.lessonId}/kcs`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/modules/${params.moduleId}/kcs`, {
       headers: {
         'Authorization': authHeader,
       },
@@ -33,9 +33,9 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching lesson-KC mappings:', error);
+    console.error('Error fetching module KCs:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch lesson-KC mappings' },
+      { error: 'Failed to fetch module KCs' },
       { status: 500 }
     );
   }
@@ -43,7 +43,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { lessonId: string } }
+  { params }: { params: { moduleId: string } }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -55,26 +55,15 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { kcId, targetMastery } = body;
-
-    if (!kcId || targetMastery === undefined) {
-      return NextResponse.json(
-        { error: 'KC ID and target mastery are required' },
-        { status: 400 }
-      );
-    }
 
     // Forward the request to the backend
-    const response = await fetch(`${BACKEND_URL}/api/v1/lessons/${params.lessonId}/kcs`, {
+    const response = await fetch(`${BACKEND_URL}/api/v1/modules/${params.moduleId}/kcs`, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        kcId: kcId,
-        targetMastery: targetMastery
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -88,9 +77,9 @@ export async function POST(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error creating lesson-KC mapping:', error);
+    console.error('Error creating module KC:', error);
     return NextResponse.json(
-      { error: 'Failed to create lesson-KC mapping' },
+      { error: 'Failed to create module KC' },
       { status: 500 }
     );
   }

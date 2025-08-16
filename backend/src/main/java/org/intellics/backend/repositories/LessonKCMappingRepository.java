@@ -14,7 +14,7 @@ import java.util.UUID;
 @Repository
 public interface LessonKCMappingRepository extends JpaRepository<LessonKCMapping, LessonKCMappingId> {
     
-    @Query("SELECT lkm FROM LessonKCMapping lkm WHERE lkm.lesson.lesson_id = :lessonId")
+    @Query("SELECT lkm FROM LessonKCMapping lkm WHERE lkm.lesson.lesson_id = :lessonId ORDER BY lkm.knowledge_component.kc_name ASC")
     List<LessonKCMapping> findByLessonId(@Param("lessonId") UUID lessonId);
     
     @Query("SELECT lkm FROM LessonKCMapping lkm WHERE lkm.knowledge_component.kc_id = :kcId")

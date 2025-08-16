@@ -99,6 +99,25 @@ export interface KnowledgeComponent {
   description: string;
 }
 
+// Module Lesson Mapping types matching backend ModuleLessonMappingDto
+export interface ModuleLessonMapping {
+  moduleId: string;
+  lessonId: string;
+  moduleName: string;
+  lessonName: string;
+  orderIndex: number;
+}
+
+// Lesson Order Update types matching backend ModuleLessonOrderUpdateDto
+export interface LessonOrderItem {
+  lessonId: string;
+  orderIndex: number;
+}
+
+export interface ModuleLessonOrderUpdate {
+  lessonOrders: LessonOrderItem[];
+}
+
 // Knowledge Component with relationships for data table
 export interface KnowledgeComponentWithRelationships {
   kc_id: string;

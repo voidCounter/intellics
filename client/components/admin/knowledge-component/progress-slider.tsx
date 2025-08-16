@@ -16,6 +16,8 @@ export const InteractiveProgressBar = ({
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragValue, setDragValue] = useState(value);
+  
+
 
   const getColorClass = (val: number) => {
     if (type === 'mastery') {
@@ -118,6 +120,11 @@ export const InteractiveProgressBar = ({
 
   const currentValue = isDragging ? dragValue : value;
   const percentage = Math.round(currentValue * 100);
+
+  // Sync dragValue with value prop when it changes
+  useEffect(() => {
+    setDragValue(value);
+  }, [value]);
 
   // Cleanup event listeners on unmount or when dragging stops
   useEffect(() => {
