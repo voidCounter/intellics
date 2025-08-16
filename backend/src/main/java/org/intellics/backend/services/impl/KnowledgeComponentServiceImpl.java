@@ -5,13 +5,16 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import java.util.ArrayList;
 
 import org.intellics.backend.domain.dto.KnowledgeComponentWithRelationshipsDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentCreateDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentPatchDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentSimpleDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentUpdateDto;
+import org.intellics.backend.domain.dto.BatchDeleteResponseDto;
 import org.intellics.backend.domain.entities.KnowledgeComponent;
+import org.intellics.backend.domain.entities.ModuleKCMapping;
 import org.intellics.backend.mappers.Mapper;
 import org.intellics.backend.repositories.KnowledgeComponentRepository;
 import org.intellics.backend.repositories.LessonKCMappingRepository;
@@ -22,6 +25,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -63,30 +67,53 @@ public class KnowledgeComponentServiceImpl implements KnowledgeComponentService 
 
     @Override
     public Page<KnowledgeComponentSimpleDto> findAllPaginated(Pageable pageable) {
-        Page<KnowledgeComponent> kcPage = knowledgeComponentRepository.findAll(pageable);
-        List<KnowledgeComponentSimpleDto> kcDtos = kcPage.getContent().stream()
+        // Get all KCs and filter by active status
+        List<KnowledgeComponent> allKcs = knowledgeComponentRepository.findByIsActiveTrue();
+        
+        // Apply pagination manually since we're filtering by active status
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allKcs.size());
+        
+        List<KnowledgeComponent> pageContent = allKcs.subList(start, end);
+        List<KnowledgeComponentSimpleDto> kcDtos = pageContent.stream()
                 .map(knowledgeComponentSimpleMapper::mapTo)
                 .collect(Collectors.toList());
         
         return new org.springframework.data.domain.PageImpl<>(
             kcDtos, 
             pageable, 
-            kcPage.getTotalElements()
+            allKcs.size()
         );
     }
 
     @Override
     public Optional<KnowledgeComponentSimpleDto> findOne(UUID id) {
-        return knowledgeComponentRepository.findById(id).map(knowledgeComponentSimpleMapper::mapTo);
+        try {
+            KnowledgeComponent kc = knowledgeComponentRepository.findByKcIdAndIsActiveTrue(id);
+            return Optional.ofNullable(kc).map(knowledgeComponentSimpleMapper::mapTo);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 
     @Override
     public KnowledgeComponentSimpleDto updateKnowledgeComponent(UUID id, KnowledgeComponentUpdateDto knowledgeComponentUpdateDto) {
         
-        KnowledgeComponent knowledgeComponent = modelMapper.map(knowledgeComponentUpdateDto, KnowledgeComponent.class);
-        knowledgeComponent.setKc_id(id);
+        // First check if the KC exists and is active
+        KnowledgeComponent existingKc = knowledgeComponentRepository.findByKcIdAndIsActiveTrue(id);
+        if (existingKc == null) {
+            throw new RuntimeException("Knowledge Component not found or is inactive");
+        }
         
-        KnowledgeComponent updatedKnowledgeComponent = knowledgeComponentRepository.save(knowledgeComponent);
+        // Update only the fields that are provided
+        if (knowledgeComponentUpdateDto.getKc_name() != null) {
+            existingKc.setKc_name(knowledgeComponentUpdateDto.getKc_name());
+        }
+        if (knowledgeComponentUpdateDto.getDescription() != null) {
+            existingKc.setDescription(knowledgeComponentUpdateDto.getDescription());
+        }
+        
+        KnowledgeComponent updatedKnowledgeComponent = knowledgeComponentRepository.save(existingKc);
         return knowledgeComponentSimpleMapper.mapTo(updatedKnowledgeComponent);
     }
 
@@ -97,23 +124,38 @@ public class KnowledgeComponentServiceImpl implements KnowledgeComponentService 
 
     @Override
     public boolean isExists(UUID id) {
-        return knowledgeComponentRepository.existsById(id);
+        try {
+            return knowledgeComponentRepository.findByKcIdAndIsActiveTrue(id) != null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override
     public KnowledgeComponentSimpleDto patchKnowledgeComponent(UUID id, KnowledgeComponentPatchDto knowledgeComponentPatchDto) {
-        return knowledgeComponentRepository.findById(id).map(existingKc -> {
-            Optional.ofNullable(knowledgeComponentPatchDto.getKc_name()).ifPresent(existingKc::setKc_name);
-            Optional.ofNullable(knowledgeComponentPatchDto.getDescription()).ifPresent(existingKc::setDescription);
-            KnowledgeComponent updatedKc = knowledgeComponentRepository.save(existingKc);
-            return knowledgeComponentSimpleMapper.mapTo(updatedKc);
-        }).orElseThrow(() -> new RuntimeException("Knowledge Component not found"));
+        KnowledgeComponent existingKc = knowledgeComponentRepository.findByKcIdAndIsActiveTrue(id);
+        if (existingKc == null) {
+            throw new RuntimeException("Knowledge Component not found or is inactive");
+        }
+        
+        Optional.ofNullable(knowledgeComponentPatchDto.getKc_name()).ifPresent(existingKc::setKc_name);
+        Optional.ofNullable(knowledgeComponentPatchDto.getDescription()).ifPresent(existingKc::setDescription);
+        
+        KnowledgeComponent updatedKc = knowledgeComponentRepository.save(existingKc);
+        return knowledgeComponentSimpleMapper.mapTo(updatedKc);
     }
 
     @Override
     public Page<KnowledgeComponentWithRelationshipsDto> findAllWithRelationshipsPaginated(Pageable pageable) {
-        Page<KnowledgeComponent> kcPage = knowledgeComponentRepository.findAll(pageable);
-        List<KnowledgeComponentWithRelationshipsDto> kcDtos = kcPage.getContent().stream()
+        // Get all active KCs and filter by active status
+        List<KnowledgeComponent> allKcs = knowledgeComponentRepository.findByIsActiveTrue();
+        
+        // Apply pagination manually since we're filtering by active status
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allKcs.size());
+        
+        List<KnowledgeComponent> pageContent = allKcs.subList(start, end);
+        List<KnowledgeComponentWithRelationshipsDto> kcDtos = pageContent.stream()
                 .map(this::buildKCWithRelationships)
                 .collect(Collectors.toList());
         
@@ -121,8 +163,71 @@ public class KnowledgeComponentServiceImpl implements KnowledgeComponentService 
         return new org.springframework.data.domain.PageImpl<>(
             kcDtos, 
             pageable, 
-            kcPage.getTotalElements()
+            allKcs.size()
         );
+    }
+
+    @Override
+    @Transactional
+    public BatchDeleteResponseDto softDeleteBatch(List<UUID> ids) {
+        List<UUID> successfullyDeleted = new ArrayList<>();
+        List<UUID> failedToDelete = new ArrayList<>();
+        
+        for (UUID id : ids) {
+            try {
+                if (knowledgeComponentRepository.findByKcIdAndIsActiveTrue(id) != null) {
+                    softDelete(id);
+                    successfullyDeleted.add(id);
+                    log.info("Successfully soft deleted KC with ID: {}", id);
+                } else {
+                    failedToDelete.add(id);
+                    log.warn("Failed to soft delete KC with ID: {} - not found or already inactive", id);
+                }
+            } catch (Exception e) {
+                failedToDelete.add(id);
+                log.error("Error soft deleting KC with ID: {}", id, e);
+            }
+        }
+        
+        return new BatchDeleteResponseDto(
+            ids.size(),
+            successfullyDeleted.size(),
+            failedToDelete.size(),
+            successfullyDeleted,
+            failedToDelete
+        );
+    }
+
+    @Override
+    @Transactional
+    public void softDelete(UUID id) {
+        KnowledgeComponent kc = knowledgeComponentRepository.findByKcIdAndIsActiveTrue(id);
+        if (kc == null) {
+            throw new RuntimeException("Knowledge Component not found or is already inactive");
+        }
+        
+        kc.setIsActive(false);
+        knowledgeComponentRepository.save(kc);
+        log.info("Soft deleted KC with ID: {}", id);
+    }
+
+    @Override
+    public boolean canHardDelete(UUID id) {
+        // Check if KC has any mappings or is referenced anywhere
+        // This would check lesson_kc_mapping, question_kc_mapping, etc.
+        // For now, return false to prevent hard deletion
+        return false;
+    }
+
+    @Override
+    @Transactional
+    public void hardDelete(UUID id) {
+        if (!canHardDelete(id)) {
+            throw new RuntimeException("Cannot hard delete KC - it has active references");
+        }
+        
+        knowledgeComponentRepository.deleteById(id);
+        log.info("Hard deleted KC with ID: {}", id);
     }
 
     private KnowledgeComponentWithRelationshipsDto buildKCWithRelationships(KnowledgeComponent kc) {

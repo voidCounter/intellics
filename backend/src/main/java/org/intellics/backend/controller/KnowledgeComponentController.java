@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import org.intellics.backend.domain.dto.BatchDeleteRequestDto;
+import org.intellics.backend.domain.dto.BatchDeleteResponseDto;
 
 @RestController
 @RequestMapping("/api/v1/kcs")
@@ -147,6 +149,21 @@ public class KnowledgeComponentController {
             @Parameter(description = "Unique identifier of the knowledge component to delete") @PathVariable("id") UUID id) {
         knowledgeComponentService.delete(id);
         return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, null, "Knowledge Component deleted successfully."), HttpStatus.NO_CONTENT);
+    }
+
+    @DeleteMapping(path = "/batch")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Soft delete knowledge components", description = "Soft deletes multiple knowledge components by setting is_active to false")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Knowledge components soft deleted successfully",
+                    content = @Content(schema = @Schema(implementation = ApiResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "403", description = "Access denied - Admin role required")
+    })
+    public ResponseEntity<ApiResponseDto<BatchDeleteResponseDto>> softDeleteKnowledgeComponents(
+            @Parameter(description = "List of knowledge component IDs to soft delete") @Validated @RequestBody BatchDeleteRequestDto batchDeleteRequestDto) {
+        BatchDeleteResponseDto response = knowledgeComponentService.softDeleteBatch(batchDeleteRequestDto.getIds());
+        return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, response, "Knowledge Components soft deleted successfully."), HttpStatus.OK);
     }
 
     @PatchMapping(path = "/{id}")

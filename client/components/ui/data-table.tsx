@@ -14,6 +14,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  ColumnResizeMode,
 } from "@tanstack/react-table"
 
 import {
@@ -35,7 +36,9 @@ interface DataTableProps<TData, TValue> {
   searchPlaceholder?: string
   showPagination?: boolean
   showToolbar?: boolean
-  onRowClick?: (row: TData) => void
+  tableId?: string
+  onSelectionChange?: (selectedRows: TData[]) => void
+  onClearSelection?: () => void
 }
 
 export function DataTable<TData, TValue>({
@@ -45,16 +48,35 @@ export function DataTable<TData, TValue>({
   searchPlaceholder = "Search...",
   showPagination = true,
   showToolbar = true,
-  onRowClick,
+  tableId = "default",
+  onSelectionChange,
+  onClearSelection,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [sorting, setSorting] = React.useState<SortingState>([])
+  
+  // Initialize column sizing from localStorage with fallback to empty object
+  const [columnSizing, setColumnSizing] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`table-column-sizes-${tableId}`);
+      return saved ? JSON.parse(saved) : {};
+    }
+    return {};
+  });
+  
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 20,
   })
+
+  // Save column sizes to localStorage whenever they change
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(columnSizing).length > 0) {
+      localStorage.setItem(`table-column-sizes-${tableId}`, JSON.stringify(columnSizing));
+    }
+  }, [columnSizing, tableId]);
 
   const table = useReactTable({
     data,
@@ -64,14 +86,18 @@ export function DataTable<TData, TValue>({
       columnVisibility,
       rowSelection,
       columnFilters,
+      columnSizing,
       pagination,
     },
     enableRowSelection: true,
     enableColumnFilters: true,
+    enableColumnResizing: true,
+    columnResizeMode: 'onChange' as ColumnResizeMode,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnSizingChange: setColumnSizing,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -80,6 +106,30 @@ export function DataTable<TData, TValue>({
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
+
+  // Call onSelectionChange when selection changes
+  React.useEffect(() => {
+    if (onSelectionChange) {
+      const selectedRows = table.getFilteredSelectedRowModel().rows.map(row => row.original);
+      onSelectionChange(selectedRows);
+    }
+  }, [rowSelection, onSelectionChange, table]);
+
+  // Handle clear selection request
+  React.useEffect(() => {
+    if (onClearSelection) {
+      const clearSelection = () => {
+        setRowSelection({});
+      };
+      
+      // Store the clear function in a way that parent can call it
+      (window as any).__clearTableSelection = clearSelection;
+      
+      return () => {
+        delete (window as any).__clearTableSelection;
+      };
+    }
+  }, [onClearSelection]);
 
   return (
     <div className="space-y-4">
@@ -109,56 +159,88 @@ export function DataTable<TData, TValue>({
         </div>
       )}
       <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id} colSpan={header.colSpan} className="whitespace-nowrap">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  )
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="group relative cursor-pointer hover:bg-muted/50"
-                  onClick={() => onRowClick?.(row.original)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
+        <div 
+          className="overflow-x-auto overflow-y-hidden isolate" 
+          style={{ 
+            scrollbarWidth: 'thin', 
+            scrollbarColor: 'rgb(156 163 175) transparent',
+            overscrollBehavior: 'contain'
+          }}
+        >
+          <Table style={{ width: table.getCenterTotalSize() }}>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead 
+                        key={header.id} 
+                        colSpan={header.colSpan} 
+                        className="whitespace-nowrap relative"
+                        style={{ width: header.getSize() }}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                        {header.column.getCanResize() && (
+                          <div
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                            className={`absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none ${
+                              header.column.getIsResizing() 
+                                ? 'bg-blue-500' 
+                                : 'bg-transparent hover:bg-gray-300'
+                            }`}
+                          >
+                            {/* Visual marker for resize handle */}
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gray-300 opacity-40 rounded-full" />
+                          </div>
+                        )}
+                      </TableHead>
+                    )
+                  })}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className={`group relative md:cursor-pointer md:hover:bg-muted/50 ${
+                      row.getIsSelected() ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                    }`}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell 
+                        key={cell.id}
+                        style={{ width: cell.column.getSize() }}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
       {showPagination && <DataTablePagination table={table} />}
     </div>

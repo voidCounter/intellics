@@ -483,3 +483,36 @@ export function useRemoveKCFromModule() {
     },
   });
 }
+
+// Soft delete knowledge components
+export function useSoftDeleteKnowledgeComponents() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const token = localStorage.getItem("authToken");
+      if (!token) throw new Error("No auth token");
+
+      const response = await fetch(`${BACKEND_URL}/api/v1/kcs/batch`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to soft delete knowledge components");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate KC list to trigger refetch
+      queryClient.invalidateQueries({ queryKey: kcKeys.lists() });
+      queryClient.refetchQueries({ queryKey: kcKeys.lists() });
+    },
+  });
+}

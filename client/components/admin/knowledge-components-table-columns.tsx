@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Trash2, ExternalLink, PanelRight, BookOpen, HelpCircle } from "lucide-react"
 import { KnowledgeComponentWithRelationships } from "@/types/api"
 
@@ -31,10 +32,43 @@ export const createColumns = (
   navigateToItem?: (type: 'module' | 'lesson' | 'question', id: string) => void
 ): ColumnDef<KnowledgeComponentWithRelationships>[] => [
   {
+    id: "select",
+    header: ({ table }) => (
+      <div className="flex items-center gap-2">
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+        {table.getFilteredSelectedRowModel().rows.length > 0 && (
+          <span className="text-xs text-muted-foreground font-medium">
+            {table.getFilteredSelectedRowModel().rows.length} selected
+          </span>
+        )}
+      </div>
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 50,
+    minSize: 50,
+  },
+  {
     accessorKey: "kc_name",
     header: "KC Name",
     enableColumnFilter: false,
     accessorFn: (row) => `${row.kc_name} ${row.description || ''}`.toLowerCase(),
+    size: 300,
+    minSize: 200,
     cell: ({ row }) => {
       const kc = row.original;
       
@@ -45,8 +79,21 @@ export const createColumns = (
             {truncateText(kc.description, 50)}
           </div>
           
-          {/* Row hover button - appears when hovering anywhere over the row */}
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          {/* Open button - visible on mobile, hidden on desktop until hover */}
+          <div className="md:hidden mt-2">
+            <Button 
+              size="sm" 
+              variant="secondary" 
+              className="border-2 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 text-gray-700 font-medium shadow-lg"
+              onClick={() => openDrawer?.(kc)}
+            >
+              <PanelRight className="h-4 w-4 mr-2" />
+              Open
+            </Button>
+          </div>
+          
+          {/* Desktop hover button - hidden on mobile, visible on desktop hover */}
+          <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
             <div className="pointer-events-auto">
               <Button 
                 size="sm" 
@@ -71,6 +118,8 @@ export const createColumns = (
     id: "linkedModules",
     header: "Linked Module(s)",
     enableColumnFilter: true,
+    size: 250,
+    minSize: 150,
     filterFn: (row, columnId, filterValue) => {
       const modules = row.original.linkedModules;
       
@@ -119,6 +168,8 @@ export const createColumns = (
     id: "linkedLessons",
     header: "Linked Lesson(s)",
     enableColumnFilter: true,
+    size: 250,
+    minSize: 150,
     filterFn: (row, columnId, filterValue) => {
       const lessons = row.original.linkedLessons;
       
@@ -167,6 +218,8 @@ export const createColumns = (
     id: "linkedQuestions",
     header: "Linked Question(s)",
     enableColumnFilter: true,
+    size: 300,
+    minSize: 200,
     filterFn: (row, columnId, filterValue) => {
       const questions = row.original.linkedQuestions;
       
@@ -203,26 +256,6 @@ export const createColumns = (
               {truncateText(question.question_text, 25)}
             </span>
           ))}
-        </div>
-      );
-    },
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }) => {
-      const kc = row.original;
-      
-      return (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={() => console.log("Delete KC:", kc.kc_id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
         </div>
       );
     },

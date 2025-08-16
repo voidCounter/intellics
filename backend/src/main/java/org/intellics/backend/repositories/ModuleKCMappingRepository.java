@@ -3,6 +3,7 @@ package org.intellics.backend.repositories;
 import org.intellics.backend.domain.entities.Module;
 import org.intellics.backend.domain.entities.ModuleKCMapping;
 import org.intellics.backend.domain.entities.ModuleKCMappingId;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
