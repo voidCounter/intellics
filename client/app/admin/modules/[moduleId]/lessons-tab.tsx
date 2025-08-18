@@ -157,8 +157,8 @@ export function ModuleLessonsTab({ moduleId }: ModuleLessonsTabProps) {
         throw new Error('Authentication required')
       }
 
-      const response = await fetch(`/api/modules/${moduleId}/lessons/order`, {
-        method: 'PUT',
+      const response = await fetch(`/api/modules/${moduleId}/lessons`, {
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

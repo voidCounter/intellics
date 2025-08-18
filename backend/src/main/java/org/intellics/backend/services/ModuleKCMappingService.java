@@ -14,4 +14,6 @@ public interface ModuleKCMappingService {
     void delete(UUID moduleId, UUID kcId);
     boolean isExists(UUID moduleId, UUID kcId);
     ModuleKCMappingDto patchModuleKCMapping(UUID moduleId, UUID kcId, ModuleKCMappingPatchDto patchDto);
+    ModuleKCMappingDto addSinglePrerequisite(org.intellics.backend.domain.entities.Module module, org.intellics.backend.domain.entities.KnowledgeComponent kc, org.intellics.backend.domain.dto.PrerequisiteWithRationaleDto prerequisite);
+    void removeSinglePrerequisite(org.intellics.backend.domain.entities.Module module, org.intellics.backend.domain.entities.KnowledgeComponent kc, UUID prerequisiteKcId);
 }

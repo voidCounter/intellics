@@ -407,7 +407,7 @@ export function useAddKCToModule() {
       console.log('JSON stringified:', JSON.stringify(requestBody));
 
       const response = await fetch(
-        `${BACKEND_URL}/api/v1/modules/${moduleId}/kcs/link`, // Use the correct endpoint for linking existing KCs
+        `${BACKEND_URL}/api/v1/modules/${moduleId}/kcs`, // Use the correct endpoint for linking existing KCs
         {
           method: "POST",
           headers: {

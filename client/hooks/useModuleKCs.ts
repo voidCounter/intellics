@@ -62,7 +62,7 @@ export function useAddKCToModule(moduleId: string) {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(`/api/modules/${moduleId}/kcs/link`, {
+      const response = await fetch(`/api/modules/${moduleId}/kcs`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

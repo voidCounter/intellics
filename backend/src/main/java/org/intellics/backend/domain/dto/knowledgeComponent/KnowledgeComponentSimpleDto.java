@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -22,4 +23,7 @@ public class KnowledgeComponentSimpleDto {
 
     @Size(max = 1000, message = "Description cannot exceed 1000 characters")
     private String description;
+    
+    private Instant created_at;
+    private Instant updated_at;
 }

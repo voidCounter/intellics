@@ -16,4 +16,7 @@ public class ModuleKCMappingDto {
     private UUID moduleId;
     private UUID kcId;
     private List<UUID> prerequisiteKcIds;
+    
+    // Optional: Prerequisites with rationale (if provided, this takes precedence over prerequisiteKcIds)
+    private List<PrerequisiteWithRationaleDto> prerequisitesWithRationale;
 }

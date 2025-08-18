@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.intellics.backend.domain.dto.LessonDto;
 import org.intellics.backend.domain.dto.ModuleDto;
 import org.intellics.backend.domain.dto.ModuleKCMappingDto;
+import org.intellics.backend.domain.dto.PrerequisiteWithRationaleDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentCreateDto;
 
 public interface ModuleService {
@@ -18,6 +19,10 @@ public interface ModuleService {
     List<org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentPrerequisiteDto> getKnowledgeComponentsByModule(UUID moduleId);
     org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentPrerequisiteDto getKnowledgeComponentByModule(UUID moduleId, UUID kcId);
     ModuleKCMappingDto addKnowledgeComponentToModule(UUID moduleId, UUID kcId, List<UUID> prerequisiteKcIds);
+    ModuleKCMappingDto addKnowledgeComponentToModuleWithRationale(UUID moduleId, UUID kcId, List<PrerequisiteWithRationaleDto> prerequisites);
+    ModuleKCMappingDto addSinglePrerequisiteToKC(UUID moduleId, UUID kcId, PrerequisiteWithRationaleDto prerequisite);
+    void removeSinglePrerequisiteFromKC(UUID moduleId, UUID kcId, UUID prerequisiteKcId);
+    List<PrerequisiteWithRationaleDto> getPrerequisitesWithRationale(UUID moduleId, UUID kcId);
     void removeKnowledgeComponentFromModule(UUID moduleId, UUID kcId);
     void removeAllKnowledgeComponentsFromModule(UUID moduleId);
     org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentPrerequisiteDto createAndAddKnowledgeComponentToModule(UUID moduleId, KnowledgeComponentCreateDto kcCreateDto);

@@ -3,12 +3,14 @@ package org.intellics.backend.domain.entities;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -19,17 +21,17 @@ public class ModuleKCPrerequisite {
     private ModuleKCPrerequisiteId id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("moduleId")
-    @JoinColumn(name = "module_id")
+    @JoinColumn(name = "module_id", insertable = false, updatable = false)
     private Module module;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
-    @MapsId("kcId")
-    @JoinColumn(name = "kc_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "kc_id", insertable = false, updatable = false)
     private KnowledgeComponent knowledgeComponent;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
-    @MapsId("prerequisiteKcId")
-    @JoinColumn(name = "prerequisite_kc_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "prerequisite_kc_id", insertable = false, updatable = false)
     private KnowledgeComponent prerequisiteKnowledgeComponent;
+
+    @Column(name = "rationale", columnDefinition = "TEXT")
+    private String rationale;
 }

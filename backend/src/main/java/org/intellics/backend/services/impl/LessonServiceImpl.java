@@ -119,8 +119,8 @@ public class LessonServiceImpl implements LessonService {
         if (lessonContent.isEmpty()) {
             throw new IllegalArgumentException("Lesson content cannot be empty");
         }
-        if (lessonContent.length() > 10000) {
-            throw new IllegalArgumentException("Lesson content cannot exceed 10000 characters");
+        if (lessonContent.length() > 100000) {
+            throw new IllegalArgumentException("Lesson content cannot exceed 100000 characters");
         }
         
         Lesson lesson = lessonMapper.mapFrom(lessonDto);
@@ -153,8 +153,8 @@ public class LessonServiceImpl implements LessonService {
         if (lessonContent.isEmpty()) {
             throw new IllegalArgumentException("Lesson content cannot be empty");
         }
-        if (lessonContent.length() > 10000) {
-            throw new IllegalArgumentException("Lesson content cannot exceed 10000 characters");
+        if (lessonContent.length() > 100000) {
+            throw new IllegalArgumentException("Lesson content cannot exceed 100000 characters");
         }
         existingLesson.setLesson_content(lessonContent);
         

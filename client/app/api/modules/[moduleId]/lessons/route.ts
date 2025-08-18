@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
+export async function PUT(
   request: NextRequest,
-  { params }: { params: { moduleId: string } }
+  { params }: { params: Promise<{ moduleId: string }> }
 ) {
   try {
-    const moduleId = params.moduleId;
+    const { moduleId } = await params;
     
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
@@ -16,28 +16,31 @@ export async function GET(
       );
     }
 
+    // Get the request body
+    const body = await request.json();
+
     // Proxy the request to the backend
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8080';
     const response = await fetch(`${backendUrl}/api/v1/modules/${moduleId}/lessons`, {
-      method: 'GET',
+      method: 'PATCH',
       headers: {
         'Authorization': authHeader,
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
-        { error: errorData.message || 'Failed to fetch lessons' },
+        { error: errorData.message || 'Failed to update lesson orders' },
         { status: response.status }
       );
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error fetching module lessons:', error);
+    console.error('Error updating lesson orders:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

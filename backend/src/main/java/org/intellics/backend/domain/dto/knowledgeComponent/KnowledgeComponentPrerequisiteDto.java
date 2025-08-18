@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,4 +25,7 @@ public class KnowledgeComponentPrerequisiteDto {
     @Size(max = 1000, message = "Description cannot exceed 1000 characters")
     private String description;
     private List<UUID> prerequisiteKcIds;
+    
+    private Instant created_at;
+    private Instant updated_at;
 }

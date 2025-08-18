@@ -13,11 +13,13 @@ import org.intellics.backend.domain.dto.QuestionKCMappingDto;
 import org.intellics.backend.domain.dto.QuestionKCMappingRequestDto;
 import org.intellics.backend.domain.dto.QuestionKCMappingPatchDto;
 import org.intellics.backend.domain.dto.QuestionTitleDto;
+import org.intellics.backend.domain.dto.QuestionWithScaffoldsDto;
 import org.intellics.backend.domain.dto.ScaffoldDto;
 import org.intellics.backend.domain.dto.ScaffoldReorderDto;
 import org.intellics.backend.domain.entities.QuestionEntity;
 import org.intellics.backend.domain.entities.Scaffold;
 import org.intellics.backend.mappers.Mapper;
+import org.intellics.backend.mappers.QuestionWithScaffoldsMapper;
 import org.intellics.backend.mappers.ScaffoldMapper;
 import org.intellics.backend.services.QuestionKCMappingService;
 import org.intellics.backend.services.QuestionService;
@@ -25,6 +27,7 @@ import org.intellics.backend.services.ScaffoldService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -44,17 +47,20 @@ import org.springframework.validation.annotation.Validated;
 @Tag(name = "Question Management", description = "API for managing educational questions and their properties.")
 public class QuestionController {
     private final Mapper<QuestionDto, QuestionEntity> questionMapper;
+    private final QuestionWithScaffoldsMapper questionWithScaffoldsMapper;
     private final QuestionService questionService;
     private final QuestionKCMappingService questionKCMappingService;
     private final ScaffoldService scaffoldService;
     private final ScaffoldMapper scaffoldMapper;
     
     public QuestionController(Mapper<QuestionDto, QuestionEntity> questionMapper,
+                              QuestionWithScaffoldsMapper questionWithScaffoldsMapper,
                               QuestionService questionService,
                               QuestionKCMappingService questionKCMappingService,
                               ScaffoldService scaffoldService,
                               ScaffoldMapper scaffoldMapper) {
         this.questionMapper = questionMapper;
+        this.questionWithScaffoldsMapper = questionWithScaffoldsMapper;
         this.questionService = questionService;
         this.questionKCMappingService = questionKCMappingService;
         this.scaffoldService = scaffoldService;
@@ -71,6 +77,46 @@ public class QuestionController {
         return ResponseEntity.ok(
             ApiResponseDto.<QuestionDto>builder().status(ApiResponseStatus.SUCCESS).message(
                     "Question created successfully").data(questionMapper.mapTo(savedQuestionEntity))
+                .build()
+        );
+    }
+    
+    @Operation(summary = "Create a new question with scaffolds", description = "Creates a new question with scaffolds in one request")
+    @PostMapping(params = "include=scaffolds")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponseDto<QuestionWithScaffoldsDto>> createQuestionWithScaffolds(
+        @Valid @RequestBody QuestionWithScaffoldsDto questionDto) {
+        
+        // Map the DTO to entity (this will include scaffolds)
+        QuestionEntity questionEntity = questionWithScaffoldsMapper.mapFrom(questionDto);
+        
+        // Set up the bidirectional relationship for scaffolds
+        if (questionDto.getScaffolds() != null && !questionDto.getScaffolds().isEmpty()) {
+            List<Scaffold> scaffoldEntities = new ArrayList<>();
+            for (int i = 0; i < questionDto.getScaffolds().size(); i++) {
+                ScaffoldDto scaffoldDto = questionDto.getScaffolds().get(i);
+                Scaffold scaffold = scaffoldMapper.mapFrom(scaffoldDto);
+                scaffold.setQuestion(questionEntity);
+                // Set the order index if not provided
+                if (scaffold.getOrder_index() == 0) {
+                    scaffold.setOrder_index(i);
+                }
+                scaffoldEntities.add(scaffold);
+            }
+            // Set the scaffolds list on the question entity
+            questionEntity.setScaffolds(scaffoldEntities);
+        }
+        
+        // Save the question with scaffolds using cascade - this is the dope part! 🚀
+        QuestionEntity savedQuestionEntity = questionService.createQuestion(questionEntity);
+        
+        // Return the complete question with scaffolds
+        QuestionWithScaffoldsDto resultDto = questionWithScaffoldsMapper.mapTo(savedQuestionEntity);
+        return ResponseEntity.ok(
+            ApiResponseDto.<QuestionWithScaffoldsDto>builder()
+                .status(ApiResponseStatus.SUCCESS)
+                .message("Question with scaffolds created successfully")
+                .data(resultDto)
                 .build()
         );
     }
@@ -113,6 +159,17 @@ public class QuestionController {
         return ResponseEntity.ok(
             ApiResponseDto.<QuestionDto>builder().status(ApiResponseStatus.SUCCESS).message(
                     "Question retrieved successfully").data(questionMapper.mapTo(questionEntity))
+                .build()
+        );
+    }
+    
+    @Operation(summary = "Get question by ID with scaffolds", description = "Retrieves a specific question by its ID including scaffolds")
+    @GetMapping(value = "/{questionId}", params = "include=scaffolds")
+    public ResponseEntity<ApiResponseDto<QuestionWithScaffoldsDto>> getQuestionWithScaffolds(@PathVariable UUID questionId) {
+        QuestionEntity questionEntity = questionService.getQuestion(questionId);
+        return ResponseEntity.ok(
+            ApiResponseDto.<QuestionWithScaffoldsDto>builder().status(ApiResponseStatus.SUCCESS).message(
+                    "Question with scaffolds retrieved successfully").data(questionWithScaffoldsMapper.mapTo(questionEntity))
                 .build()
         );
     }

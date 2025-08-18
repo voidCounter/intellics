@@ -21,6 +21,6 @@ public class LessonDto {
     private String lesson_name;
     
     @NotBlank(message = "Lesson content cannot be blank")
-    @Size(max = 10000, message = "Lesson content cannot exceed 10000 characters")
+    @Size(max = 100000, message = "Lesson content cannot exceed 100000 characters")
     private String lesson_content;
 }

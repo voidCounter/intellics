@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,6 +17,9 @@ public class KnowledgeComponentWithRelationshipsDto {
     private UUID kc_id;
     private String kc_name;
     private String description;
+    
+    private Instant created_at;
+    private Instant updated_at;
     
     private List<LinkedModuleDto> linkedModules;
     private List<LinkedLessonDto> linkedLessons;

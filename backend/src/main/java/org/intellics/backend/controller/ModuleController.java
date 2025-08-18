@@ -11,7 +11,7 @@ import org.intellics.backend.api.ApiResponseDto;
 import org.intellics.backend.api.ApiResponseStatus;
 import org.intellics.backend.domain.dto.LessonDto;
 import org.intellics.backend.domain.dto.ModuleDto;
-import org.intellics.backend.domain.dto.ModuleKCLinkRequestDto;
+
 import org.intellics.backend.domain.dto.ModuleKCMappingDto;
 import org.intellics.backend.domain.dto.ModuleKCMappingPatchDto;
 import org.intellics.backend.domain.dto.ModuleLessonLinkRequestDto;
@@ -164,22 +164,7 @@ public class ModuleController {
         return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, kc, "Knowledge Component retrieved successfully."), HttpStatus.OK);
     }
 
-    @PostMapping("/{moduleId}/kcs/link")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Link KC to module", description = "Links an existing knowledge component to a module")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Knowledge component linked to module successfully",
-                    content = @Content(schema = @Schema(implementation = ApiResponseDto.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid input data"),
-            @ApiResponse(responseCode = "403", description = "Access denied - Admin role required"),
-            @ApiResponse(responseCode = "404", description = "Module or KC not found")
-    })
-    public ResponseEntity<ApiResponseDto<ModuleKCMappingDto>> addKnowledgeComponentToModule(
-            @Parameter(description = "Unique identifier of the module") @PathVariable("moduleId") UUID moduleId,
-            @Parameter(description = "KC linking data") @Validated @RequestBody ModuleKCLinkRequestDto linkRequestDto) {
-        ModuleKCMappingDto mapping = moduleService.addKnowledgeComponentToModule(moduleId, linkRequestDto.getKcId(), null);
-        return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, mapping, "Knowledge Component added to module successfully."), HttpStatus.CREATED);
-    }
+
 
     @DeleteMapping("/{moduleId}/kcs/{kcId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -225,6 +210,72 @@ public class ModuleController {
             @Parameter(description = "Knowledge component data to create") @Validated @RequestBody KnowledgeComponentCreateDto kcCreateDto) {
         KnowledgeComponentPrerequisiteDto newKc = moduleService.createAndAddKnowledgeComponentToModule(moduleId, kcCreateDto);
         return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, newKc, "New Knowledge Component created and added to module successfully."), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/{moduleId}/kcs/{kcId}/prerequisites")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Add prerequisites with rationale to KC in module", description = "Adds prerequisites with rationale explanations to a knowledge component in a module")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Prerequisites added successfully",
+                    content = @Content(schema = @Schema(implementation = ApiResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "403", description = "Access denied - Admin role required"),
+            @ApiResponse(responseCode = "404", description = "Module or KC not found")
+    })
+    public ResponseEntity<ApiResponseDto<ModuleKCMappingDto>> addPrerequisitesWithRationale(
+            @Parameter(description = "Unique identifier of the module") @PathVariable("moduleId") UUID moduleId,
+            @Parameter(description = "Unique identifier of the knowledge component") @PathVariable("kcId") UUID kcId,
+            @Parameter(description = "Prerequisites with rationale") @Validated @RequestBody List<org.intellics.backend.domain.dto.PrerequisiteWithRationaleDto> prerequisites) {
+        ModuleKCMappingDto updatedMapping = moduleService.addKnowledgeComponentToModuleWithRationale(moduleId, kcId, prerequisites);
+        return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, updatedMapping, "Prerequisites with rationale added successfully."), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/{moduleId}/kcs/{kcId}/prerequisites/add")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Add single prerequisite to existing KC in module", description = "Adds a single prerequisite with rationale to an existing knowledge component in a module without replacing existing prerequisites")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Prerequisite added successfully",
+                    content = @Content(schema = @Schema(implementation = ApiResponseDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "403", description = "Access denied - Admin role required"),
+            @ApiResponse(responseCode = "404", description = "Module or KC not found")
+    })
+    public ResponseEntity<ApiResponseDto<ModuleKCMappingDto>> addSinglePrerequisite(
+            @Parameter(description = "Unique identifier of the module") @PathVariable("moduleId") UUID moduleId,
+            @Parameter(description = "Unique identifier of the knowledge component") @PathVariable("kcId") UUID kcId,
+            @Parameter(description = "Single prerequisite with rationale") @Validated @RequestBody org.intellics.backend.domain.dto.PrerequisiteWithRationaleDto prerequisite) {
+        ModuleKCMappingDto updatedMapping = moduleService.addSinglePrerequisiteToKC(moduleId, kcId, prerequisite);
+        return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, updatedMapping, "Prerequisite added successfully."), HttpStatus.CREATED);
+    }
+
+    @DeleteMapping("/{moduleId}/kcs/{kcId}/prerequisites/{prerequisiteKcId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Remove single prerequisite from KC in module", description = "Removes a single prerequisite relationship from a knowledge component in a module")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Prerequisite removed successfully"),
+            @ApiResponse(responseCode = "403", description = "Access denied - Admin role required"),
+            @ApiResponse(responseCode = "404", description = "Module, KC, or prerequisite relationship not found")
+    })
+    public ResponseEntity<Void> removeSinglePrerequisite(
+            @Parameter(description = "Unique identifier of the module") @PathVariable("moduleId") UUID moduleId,
+            @Parameter(description = "Unique identifier of the knowledge component") @PathVariable("kcId") UUID kcId,
+            @Parameter(description = "Unique identifier of the prerequisite knowledge component") @PathVariable("prerequisiteKcId") UUID prerequisiteKcId) {
+        moduleService.removeSinglePrerequisiteFromKC(moduleId, kcId, prerequisiteKcId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{moduleId}/kcs/{kcId}/prerequisites")
+    @Operation(summary = "Get prerequisites with rationale for KC in module", description = "Retrieves prerequisites with rationale explanations for a knowledge component in a module")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Prerequisites retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = ApiResponseDto.class))),
+            @ApiResponse(responseCode = "404", description = "Module or KC not found")
+    })
+    public ResponseEntity<ApiResponseDto<List<org.intellics.backend.domain.dto.PrerequisiteWithRationaleDto>>> getPrerequisitesWithRationale(
+            @Parameter(description = "Unique identifier of the module") @PathVariable("moduleId") UUID moduleId,
+            @Parameter(description = "Unique identifier of the knowledge component") @PathVariable("kcId") UUID kcId) {
+        List<org.intellics.backend.domain.dto.PrerequisiteWithRationaleDto> prerequisites = moduleService.getPrerequisitesWithRationale(moduleId, kcId);
+        return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, prerequisites, "Prerequisites with rationale retrieved successfully."), HttpStatus.OK);
     }
 
     @PatchMapping("/{moduleId}/kcs/{kcId}/prerequisites")
@@ -276,25 +327,9 @@ public class ModuleController {
         return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, createdMapping, "Lesson added to module successfully."), HttpStatus.CREATED);
     }
 
-    @PostMapping("/{moduleId}/lessons/create")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Create lesson and add to module", description = "Creates a new lesson and automatically adds it to the specified module")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Lesson created and added to module successfully",
-                    content = @Content(schema = @Schema(implementation = ApiResponseDto.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid input data or lesson KCs not available in module"),
-            @ApiResponse(responseCode = "403", description = "Access denied - Admin role required"),
-            @ApiResponse(responseCode = "404", description = "Module not found")
-    })
-    public ResponseEntity<ApiResponseDto<LessonDto>> createLessonForModule(
-            @Parameter(description = "Unique identifier of the module") @PathVariable("moduleId") UUID moduleId,
-            @Parameter(description = "Lesson data to create") @Validated @RequestBody LessonDto lessonDto) {
-        
-        LessonDto createdLesson = moduleService.createLessonForModule(moduleId, lessonDto);
-        return new ResponseEntity<>(new ApiResponseDto<>(ApiResponseStatus.SUCCESS, createdLesson, "Lesson created and added to module successfully."), HttpStatus.CREATED);
-    }
 
-    @PutMapping("/{moduleId}/lessons/order")
+
+    @PatchMapping("/{moduleId}/lessons")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update all lesson orders", description = "Updates the order of all lessons in a module. Perfect for drag-and-drop reordering.")
     @ApiResponses(value = {

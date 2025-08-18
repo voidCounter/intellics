@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -49,6 +49,7 @@ interface DraggableNodeProps {
   onView?: (kcId: string) => void;
   onRemove?: (kcId: string) => void;
   isDragging: boolean;
+  expandedNodes: Set<string>;
 }
 
 function DraggableNode({ 
@@ -61,7 +62,8 @@ function DraggableNode({
   onEdit, 
   onView, 
   onRemove, 
-  isDragging 
+  isDragging,
+  expandedNodes
 }: DraggableNodeProps) {
   const {
     attributes,
@@ -179,7 +181,7 @@ function DraggableNode({
               key={child.id}
               node={child}
               index={childIndex}
-              isExpanded={false} // We'll handle this differently
+              isExpanded={expandedNodes.has(child.id)}
               hasChildren={child.children && child.children.length > 0}
               indentLevel={child.level}
               onToggle={onToggle}
@@ -187,6 +189,7 @@ function DraggableNode({
               onView={onView}
               onRemove={onRemove}
               isDragging={isDragging}
+              expandedNodes={expandedNodes}
             />
           ))}
         </div>
@@ -200,6 +203,16 @@ export function KCTree({ nodes, onReorder, onEdit, onView, onRemove }: KCTreePro
   const [localNodes, setLocalNodes] = useState<KCTreeNode[]>(nodes);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Debug: Log the tree structure
+  console.log('KCTree nodes:', nodes);
+  console.log('KCTree localNodes:', localNodes);
+  console.log('KCTree expandedNodes:', expandedNodes);
+
+  // Update localNodes when nodes prop changes
+  useEffect(() => {
+    setLocalNodes(nodes);
+  }, [nodes]);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -208,13 +221,17 @@ export function KCTree({ nodes, onReorder, onEdit, onView, onRemove }: KCTreePro
   );
 
   const toggleNode = (nodeId: string) => {
+    console.log('toggleNode called with:', nodeId);
     setExpandedNodes(prev => {
       const newSet = new Set(prev);
       if (newSet.has(nodeId)) {
         newSet.delete(nodeId);
+        console.log('Node collapsed:', nodeId);
       } else {
         newSet.add(nodeId);
+        console.log('Node expanded:', nodeId);
       }
+      console.log('New expandedNodes:', newSet);
       return newSet;
     });
   };
@@ -323,10 +340,34 @@ export function KCTree({ nodes, onReorder, onEdit, onView, onRemove }: KCTreePro
     return prerequisites;
   };
 
+  // Helper function to get all node IDs from the tree (including nested)
+  const getAllNodeIds = (nodes: KCTreeNode[]): string[] => {
+    const ids: string[] = [];
+    const collectIds = (nodeList: KCTreeNode[]) => {
+      nodeList.forEach(node => {
+        ids.push(node.id);
+        if (node.children && node.children.length > 0) {
+          collectIds(node.children);
+        }
+      });
+    };
+    collectIds(nodes);
+    return ids;
+  };
+
   const renderNode = (node: KCTreeNode, index: number) => {
     const isExpanded = expandedNodes.has(node.id);
     const hasChildren = node.children && node.children.length > 0;
-    const indentLevel = node.level * 20;
+    const indentLevel = node.level * 24; // Increased indent for better visual hierarchy
+
+    console.log(`Rendering node ${node.id}:`, {
+      name: node.kc_name,
+      level: node.level,
+      hasChildren,
+      childrenCount: node.children?.length || 0,
+      isExpanded,
+      indentLevel
+    });
 
     return (
       <DraggableNode 
@@ -341,6 +382,7 @@ export function KCTree({ nodes, onReorder, onEdit, onView, onRemove }: KCTreePro
         onView={onView}
         onRemove={onRemove}
         isDragging={isDragging}
+        expandedNodes={expandedNodes}
       />
     );
   };
@@ -353,7 +395,7 @@ export function KCTree({ nodes, onReorder, onEdit, onView, onRemove }: KCTreePro
       onDragEnd={handleDragEnd}
     >
       <SortableContext
-        items={localNodes.map(node => node.id)}
+        items={getAllNodeIds(localNodes)}
         strategy={verticalListSortingStrategy}
       >
         <div className="space-y-1">
@@ -366,6 +408,7 @@ export function KCTree({ nodes, onReorder, onEdit, onView, onRemove }: KCTreePro
 
 // Utility function to build tree from flat KC list
 export function buildKCTree(kcs: any[]): KCTreeNode[] {
+  console.log('buildKCTree input:', kcs);
   const kcMap = new Map<string, any>();
   const rootNodes: KCTreeNode[] = [];
 
@@ -416,5 +459,7 @@ export function buildKCTree(kcs: any[]): KCTreeNode[] {
     return sorted;
   };
 
-  return sortAllLevels(rootNodes);
+  const result = sortAllLevels(rootNodes);
+  console.log('buildKCTree result:', result);
+  return result;
 }

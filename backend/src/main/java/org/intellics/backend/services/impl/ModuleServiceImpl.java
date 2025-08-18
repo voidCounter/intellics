@@ -9,12 +9,14 @@ import org.intellics.backend.api.error.exceptions.ItemNotFoundException;
 import org.intellics.backend.domain.dto.LessonDto;
 import org.intellics.backend.domain.dto.ModuleDto;
 import org.intellics.backend.domain.dto.ModuleKCMappingDto;
+import org.intellics.backend.domain.dto.PrerequisiteWithRationaleDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentCreateDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentPrerequisiteDto;
 import org.intellics.backend.domain.dto.knowledgeComponent.KnowledgeComponentSimpleDto;
 import org.intellics.backend.domain.entities.KnowledgeComponent;
 import org.intellics.backend.domain.entities.Module;
 import org.intellics.backend.domain.entities.ModuleKCMapping;
+import org.intellics.backend.domain.entities.ModuleKCMappingId;
 import org.intellics.backend.mappers.Mapper;
 import org.intellics.backend.repositories.ModuleKCMappingRepository;
 import org.intellics.backend.repositories.ModuleRepository;
@@ -25,6 +27,9 @@ import org.intellics.backend.services.ModuleLessonMappingService;
 import org.intellics.backend.services.ModuleService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.intellics.backend.repositories.ModuleKCPrerequisiteRepository;
+import org.intellics.backend.repositories.KnowledgeComponentRepository;
+import org.intellics.backend.domain.entities.ModuleKCPrerequisite;
 
 @Service
 public class ModuleServiceImpl implements ModuleService {
@@ -36,6 +41,8 @@ public class ModuleServiceImpl implements ModuleService {
     private final KnowledgeComponentService knowledgeComponentService;
     private final ModuleLessonMappingService moduleLessonMappingService;
     private final LessonService lessonService;
+    private final KnowledgeComponentRepository knowledgeComponentRepository;
+    private final ModuleKCPrerequisiteRepository moduleKCPrerequisiteRepository;
 
     public ModuleServiceImpl(ModuleRepository moduleRepository,
                              Mapper<ModuleDto, Module> moduleMapper,
@@ -44,7 +51,9 @@ public class ModuleServiceImpl implements ModuleService {
                              KnowledgeComponentService knowledgeComponentService,
                              ModuleLessonMappingService moduleLessonMappingService,
                              LessonService lessonService,
-                             Mapper<KnowledgeComponentPrerequisiteDto, KnowledgeComponent> knowledgeComponentPrerequisiteMapper) {
+                             Mapper<KnowledgeComponentPrerequisiteDto, KnowledgeComponent> knowledgeComponentPrerequisiteMapper,
+                             KnowledgeComponentRepository knowledgeComponentRepository,
+                                                           ModuleKCPrerequisiteRepository moduleKCPrerequisiteRepository) {
         this.moduleRepository = moduleRepository;
         this.moduleMapper = moduleMapper;
         this.moduleKCMappingRepository = moduleKCMappingRepository;
@@ -52,6 +61,8 @@ public class ModuleServiceImpl implements ModuleService {
         this.knowledgeComponentService = knowledgeComponentService;
         this.moduleLessonMappingService = moduleLessonMappingService;
         this.lessonService = lessonService;
+        this.knowledgeComponentRepository = knowledgeComponentRepository;
+        this.moduleKCPrerequisiteRepository = moduleKCPrerequisiteRepository;
     }
 
     @Override
@@ -123,16 +134,18 @@ public class ModuleServiceImpl implements ModuleService {
                 .filter(mapping -> mapping.getKnowledgeComponent().getIsActive()) // Only include active KCs
                 .map(mapping -> {
                     KnowledgeComponent kc = mapping.getKnowledgeComponent();
+                    
+                    // Get prerequisites from the ModuleKCPrerequisite table
+                    List<UUID> prerequisiteKcIds = StreamSupport.stream(moduleKCPrerequisiteRepository.findAll().spliterator(), false)
+                            .filter(p -> p.getId().getModuleId().equals(moduleId) && p.getId().getKcId().equals(kc.getKc_id()))
+                            .map(p -> p.getId().getPrerequisiteKcId())
+                            .collect(Collectors.toList());
+                    
                     KnowledgeComponentPrerequisiteDto dto = KnowledgeComponentPrerequisiteDto.builder()
                             .kc_id(kc.getKc_id())
                             .kc_name(kc.getKc_name())
                             .description(kc.getDescription())
-                            .prerequisiteKcIds(mapping.getPrerequisiteKnowledgeComponents() != null && !mapping.getPrerequisiteKnowledgeComponents().isEmpty() 
-                                ? mapping.getPrerequisiteKnowledgeComponents().stream()
-                                    .filter(prereqKc -> prereqKc.getIsActive()) // Only include active prerequisite KCs
-                                    .map(KnowledgeComponent::getKc_id)
-                                    .collect(Collectors.toList())
-                                : List.of())
+                            .prerequisiteKcIds(prerequisiteKcIds)
                             .build();
                     return dto;
                 })
@@ -150,16 +163,18 @@ public class ModuleServiceImpl implements ModuleService {
                 .findFirst()
                 .map(mapping -> {
                     KnowledgeComponent kc = mapping.getKnowledgeComponent();
+                    
+                    // Get prerequisites from the ModuleKCPrerequisite table
+                    List<UUID> prerequisiteKcIds = StreamSupport.stream(moduleKCPrerequisiteRepository.findAll().spliterator(), false)
+                            .filter(p -> p.getId().getModuleId().equals(moduleId) && p.getId().getKcId().equals(kc.getKc_id()))
+                            .map(p -> p.getId().getPrerequisiteKcId())
+                            .collect(Collectors.toList());
+                    
                     return KnowledgeComponentPrerequisiteDto.builder()
                             .kc_id(kc.getKc_id())
                             .kc_name(kc.getKc_name())
                             .description(kc.getDescription())
-                            .prerequisiteKcIds(mapping.getPrerequisiteKnowledgeComponents() != null && !mapping.getPrerequisiteKnowledgeComponents().isEmpty() 
-                                ? mapping.getPrerequisiteKnowledgeComponents().stream()
-                                    .filter(prereqKc -> prereqKc.getIsActive()) // Only include active prerequisite KCs
-                                    .map(KnowledgeComponent::getKc_id)
-                                    .collect(Collectors.toList())
-                                : List.of())
+                            .prerequisiteKcIds(prerequisiteKcIds)
                             .build();
                 })
                 .orElseThrow(() -> new ItemNotFoundException("Knowledge Component not found in module with id: " + kcId));
@@ -178,6 +193,84 @@ public class ModuleServiceImpl implements ModuleService {
 
     @Override
     @Transactional
+    public ModuleKCMappingDto addKnowledgeComponentToModuleWithRationale(UUID moduleId, UUID kcId, List<PrerequisiteWithRationaleDto> prerequisites) {
+        ModuleKCMappingDto moduleKCMappingDto = ModuleKCMappingDto.builder()
+                .moduleId(moduleId)
+                .kcId(kcId)
+                .prerequisitesWithRationale(prerequisites)
+                .build();
+        return moduleKCMappingService.createModuleKCMapping(moduleKCMappingDto);
+    }
+
+    @Override
+    @Transactional
+    public ModuleKCMappingDto addSinglePrerequisiteToKC(UUID moduleId, UUID kcId, PrerequisiteWithRationaleDto prerequisite) {
+        // Verify module and KC exist
+        Module module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + moduleId));
+        
+        KnowledgeComponent kc = knowledgeComponentRepository.findById(kcId)
+                .orElseThrow(() -> new ItemNotFoundException("Knowledge Component not found with id: " + kcId));
+        
+        // Verify the KC is already mapped to the module
+        ModuleKCMappingId mappingId = ModuleKCMappingId.builder()
+                .moduleId(moduleId)
+                .kcId(kcId)
+                .build();
+        
+        if (!moduleKCMappingRepository.existsById(mappingId)) {
+            throw new ItemNotFoundException("Knowledge Component is not mapped to this module. Please add the KC to the module first.");
+        }
+        
+        // Add the single prerequisite using the existing service
+        return moduleKCMappingService.addSinglePrerequisite(module, kc, prerequisite);
+    }
+
+    @Override
+    @Transactional
+    public void removeSinglePrerequisiteFromKC(UUID moduleId, UUID kcId, UUID prerequisiteKcId) {
+        // Verify module and KC exist
+        Module module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + moduleId));
+        
+        KnowledgeComponent kc = knowledgeComponentRepository.findById(kcId)
+                .orElseThrow(() -> new ItemNotFoundException("Knowledge Component not found with id: " + kcId));
+        
+        // Verify the KC is mapped to the module
+        ModuleKCMappingId mappingId = ModuleKCMappingId.builder()
+                .moduleId(moduleId)
+                .kcId(kcId)
+                .build();
+        
+        if (!moduleKCMappingRepository.existsById(mappingId)) {
+            throw new ItemNotFoundException("Knowledge Component is not mapped to this module.");
+        }
+        
+        // Remove the prerequisite using the existing service
+        moduleKCMappingService.removeSinglePrerequisite(module, kc, prerequisiteKcId);
+    }
+
+    @Override
+    public List<PrerequisiteWithRationaleDto> getPrerequisitesWithRationale(UUID moduleId, UUID kcId) {
+        // Verify module and KC exist
+        Module module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new ItemNotFoundException("Module not found with id: " + moduleId));
+        
+        KnowledgeComponent kc = knowledgeComponentRepository.findById(kcId)
+                .orElseThrow(() -> new ItemNotFoundException("Knowledge Component not found with id: " + kcId));
+        
+        // Get prerequisites with rationale from the prerequisite table
+        return StreamSupport.stream(moduleKCPrerequisiteRepository.findAll().spliterator(), false)
+                .filter(p -> p.getId().getModuleId().equals(moduleId) && p.getId().getKcId().equals(kcId))
+                .map(p -> PrerequisiteWithRationaleDto.builder()
+                        .prerequisiteKcId(p.getId().getPrerequisiteKcId())
+                        .rationale(p.getRationale())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
     public void removeKnowledgeComponentFromModule(UUID moduleId, UUID kcId) {
         moduleKCMappingService.delete(moduleId, kcId);
     }
@@ -192,10 +285,13 @@ public class ModuleServiceImpl implements ModuleService {
         
         // Clear all prerequisite relationships first to avoid foreign key issues
         for (ModuleKCMapping mapping : allMappings) {
-            if (mapping.getPrerequisiteKnowledgeComponents() != null && !mapping.getPrerequisiteKnowledgeComponents().isEmpty()) {
-                mapping.getPrerequisiteKnowledgeComponents().clear();
-                moduleKCMappingRepository.save(mapping);
-            }
+            // Get prerequisites for this mapping from the ModuleKCPrerequisite table
+            List<ModuleKCPrerequisite> prerequisites = StreamSupport.stream(moduleKCPrerequisiteRepository.findAll().spliterator(), false)
+                    .filter(p -> p.getId().getModuleId().equals(moduleId) && p.getId().getKcId().equals(mapping.getKnowledgeComponent().getKc_id()))
+                    .collect(Collectors.toList());
+            
+            // Delete all prerequisites for this mapping
+            moduleKCPrerequisiteRepository.deleteAll(prerequisites);
         }
         
         // Now delete all KC mappings for this module
