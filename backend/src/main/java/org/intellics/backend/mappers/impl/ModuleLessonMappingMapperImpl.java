@@ -38,6 +38,7 @@ public class ModuleLessonMappingMapperImpl implements ModuleLessonMappingMapper 
                 .lessonId(entity.getMappingId().getLessonId())
                 .moduleName(entity.getModule() != null ? entity.getModule().getModule_name() : null)
                 .lessonName(entity.getLesson() != null ? entity.getLesson().getLesson_name() : null)
+                .shortDescription(entity.getLesson() != null ? entity.getLesson().getShort_description() : null)
                 .orderIndex(entity.getOrderIndex())
                 .build();
     }

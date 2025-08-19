@@ -9,6 +9,11 @@
     font-family: 'DM Sans', sans-serif;
   }
 
+  /* Ensure code elements use monospace fonts */
+  pre, code, kbd, samp {
+    font-family: 'Consolas', 'Monaco', 'Courier New', 'Courier', monospace !important;
+  }
+
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;

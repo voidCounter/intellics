@@ -29,6 +29,7 @@ public class Lesson {
     
     private String lesson_name;
     private String lesson_content;
+    private String short_description;
     
     @OneToMany(mappedBy = "lesson", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LessonKCMapping> lessonKCMappings;

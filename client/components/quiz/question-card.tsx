@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -8,22 +8,27 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { HelpCircle, Lightbulb, ArrowRight } from 'lucide-react';
-import { Question, Scaffold, InteractionType } from '@/types/api';
+import { Question, Scaffold } from '@/types/api';
 import { ScaffoldCard } from './scaffold-card';
 import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useLearningStore, useProgressStore } from '@/lib/stores';
+import { useLearningStore } from '@/lib/stores';
 
 interface QuestionCardProps {
   question: Question;
   onSubmit: (answer: string, isCorrect: boolean) => void;
   onHint: (level: number) => void;
   onScaffold: () => void;
+  onScaffoldUsage: (scaffoldId: string) => void;
+  onScaffoldSubmit: (scaffoldId: string, answer: string, isCorrect: boolean) => void;
+  onSkip: () => void;
   usedHints: Set<string>;
   questionNumber: number;
   totalQuestions: number;
@@ -34,17 +39,22 @@ export function QuestionCard({
   onSubmit,
   onHint,
   onScaffold,
+  onScaffoldUsage,
+  onScaffoldSubmit,
+  onSkip,
   usedHints,
   questionNumber,
   totalQuestions
 }: QuestionCardProps) {
   const { currentLesson } = useLearningStore();
-  const { addInteraction } = useProgressStore();
 
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [writtenAnswer, setWrittenAnswer] = useState('');
   const [showHint1, setShowHint1] = useState(false);
   const [showHint2, setShowHint2] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [lastAnswer, setLastAnswer] = useState('');
+  const [lastIsCorrect, setLastIsCorrect] = useState(false);
 
   // State for scaffolding accordion
   const [showScaffoldContainer, setShowScaffoldContainer] = useState(false);
@@ -73,6 +83,9 @@ export function QuestionCard({
     setShowScaffoldContainer(false);
     setActiveScaffoldValue(undefined);
     setUnlockedScaffoldIndex(0);
+    setShowExplanation(false);
+    setLastAnswer('');
+    setLastIsCorrect(false);
   }, [question.question_id]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -87,6 +100,11 @@ export function QuestionCard({
       isCorrect = answer.toLowerCase().trim() === question.correct_answer_text.toLowerCase().trim();
     }
 
+    // Store the answer and result for explanation display
+    setLastAnswer(answer);
+    setLastIsCorrect(isCorrect);
+    setShowExplanation(true);
+
     if (isCorrect) {
       toast.success("Correct! Great job! Moving to the next question.");
     } else {
@@ -96,42 +114,47 @@ export function QuestionCard({
     onSubmit(answer, isCorrect);
   };
 
+  const handleContinue = () => {
+    setShowExplanation(false);
+    setShowHint1(false);
+    setShowHint2(false);
+    setShowScaffoldContainer(false);
+  };
+
   const handleSkip = () => {
-    // Log skip interaction
-    addInteraction({
-      interaction_type: InteractionType.LESSON_EXIT, // Using closest available type
-      question_id: question.question_id,
-      lesson_id: currentLesson?.lesson_id
-    });
+    // Call the parent skip handler for tracking
+    onSkip();
 
     // Call onSubmit with empty answer to move to next question
-    onSubmit('', true);
+    onSubmit('', false);
   };
 
   const handleHint = (level: number) => {
     onHint(level);
-    if (level === 1) setShowHint1(true);
-    if (level === 2) setShowHint2(true);
+    if (level === 1) {
+      setShowHint1(true);
+    }
+    if (level === 2) {
+      setShowHint2(true);
+    }
   };
 
   const handleStartScaffold = () => {
-    setShowHint1(false);
-    setShowHint2(false);
+    // Call the parent scaffold handler for tracking
+    onScaffold();
+    
+    // Don't hide hints - keep them visible once unlocked
+    // setShowHint1(false);
+    // setShowHint2(false);
+    
     setShowScaffoldContainer(true);
     setActiveScaffoldValue(undefined);
     setUnlockedScaffoldIndex(0);
   };
 
   const handleScaffoldSubmit = (scaffoldData: Scaffold, answer: string, isCorrect: boolean, scaffoldIndex: number) => {
-    // Log scaffold answer
-    addInteraction({
-      interaction_type: InteractionType.SCAFFOLD_ANSWER,
-      scaffold_id: scaffoldData.scaffoldId,
-      question_id: question.question_id,
-      lesson_id: currentLesson?.lesson_id,
-      student_answer: answer,
-      is_correct: isCorrect
-    });
+    // Call the parent scaffold submit handler for tracking
+    onScaffoldSubmit(scaffoldData.scaffoldId, answer, isCorrect);
 
     if (isCorrect) {
       toast.success("Correct! Great job! Moving to the next step.");
@@ -149,13 +172,8 @@ export function QuestionCard({
   };
 
   const handleScaffoldView = (scaffoldId: string) => {
-    // Log scaffold view
-    addInteraction({
-      interaction_type: InteractionType.SCAFFOLD_ANSWER, // Using closest available type
-      scaffold_id: scaffoldId,
-      question_id: question.question_id,
-      lesson_id: currentLesson?.lesson_id
-    });
+    // Log scaffold view using the parent handler
+    onScaffoldUsage(scaffoldId);
   };
 
   const canSubmit = question.type === 'MULTIPLE_CHOICE'
@@ -176,7 +194,9 @@ export function QuestionCard({
               </Badge>
             </div>
             <CardTitle className="text-lg leading-relaxed">
-              {question.question_text}
+              <div className="prose prose-md max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-gray-50 [&_pre]:border [&_pre]:border-gray-200 [&_pre]:p-3 [&_pre]:rounded [&_pre]:overflow-x-auto">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{question.question_text}</ReactMarkdown>
+              </div>
             </CardTitle>
           </div>
         </div>
@@ -189,7 +209,9 @@ export function QuestionCard({
               <div key={index} className="flex items-center space-x-2">
                 <RadioGroupItem value={option.option_key} id={`option-${index}-${question.question_id}`} />
                 <Label htmlFor={`option-${index}-${question.question_id}`} className="flex-1 cursor-pointer">
-                  {option.option_text}
+                  <div className="prose prose-sm max-w-none [&_p]:mb-1 [&_p:last-child]:mb-0 [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{option.option_text}</ReactMarkdown>
+                  </div>
                 </Label>
               </div>
             ))}
@@ -239,26 +261,33 @@ export function QuestionCard({
                 variant="outline"
                 size="sm"
                 onClick={handleStartScaffold}
+                disabled={!hint1Used || !hint2Used}
                 className="flex items-center gap-1"
               >
                 <Lightbulb className="h-4 w-4" />
-                Need Help?
+                {!hint1Used || !hint2Used ? 'Complete Hints First' : 'Need Help?'}
               </Button>
             )}
           </div>
 
           {showHint1 && question.hint_level_1 && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md mt-2">
-              <p className="text-sm text-blue-800">
-                <strong>Hint 1:</strong> {question.hint_level_1}
-              </p>
+              <div className="text-sm text-blue-800">
+                <strong>Hint 1:</strong> 
+                <div className="prose prose-sm max-w-none mt-1 [&_p]:mb-1 [&_p:last-child]:mb-0 [&_code]:bg-blue-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{question.hint_level_1}</ReactMarkdown>
+                </div>
+              </div>
             </div>
           )}
           {showHint2 && question.hint_level_2 && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md mt-2">
-              <p className="text-sm text-blue-800">
-                <strong>Hint 2:</strong> {question.hint_level_2}
-              </p>
+              <div className="text-sm text-blue-800">
+                <strong>Hint 2:</strong> 
+                <div className="prose prose-sm max-w-none mt-1 [&_p]:mb-1 [&_p:last-child]:mb-0 [&_code]:bg-blue-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{question.hint_level_2}</ReactMarkdown>
+                </div>
+              </div>
             </div>
           )}
 
@@ -299,18 +328,69 @@ export function QuestionCard({
               ))}
             </Accordion>
           )}
+
+          {/* Answer Explanation Section */}
+          {showExplanation && (
+            <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="mb-3">
+                <h4 className="font-semibold text-gray-900 mb-2">
+                  {lastIsCorrect ? '✅ Correct!' : '❌ Incorrect'}
+                </h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Your answer: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{lastAnswer}</span>
+                </p>
+              </div>
+
+              {/* Show option explanation for multiple choice questions */}
+              {question.type === 'MULTIPLE_CHOICE' && lastAnswer && (
+                <div className="mb-3">
+                  <h5 className="font-medium text-gray-800 mb-2">Explanation for your choice:</h5>
+                  <div className="text-sm text-gray-700 bg-white p-3 rounded border">
+                    {(() => {
+                      const selectedOption = question.options?.find(opt => opt.option_key === lastAnswer);
+                      if (selectedOption?.option_explanation) {
+                        return (
+                          <div className="prose prose-sm max-w-none [&_p]:mb-1 [&_p:last-child]:mb-0 [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedOption.option_explanation}</ReactMarkdown>
+                          </div>
+                        );
+                      }
+                      return <span className="text-gray-500 italic">No explanation available for this option.</span>;
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Show answer explanation for written questions */}
+              {question.type === 'WRITTEN' && 'answer_explanation' in question && question.answer_explanation && (
+                <div className="mb-3">
+                  <h5 className="font-medium text-gray-800 mb-2">Answer Explanation:</h5>
+                  <div className="text-sm text-gray-700 bg-white p-3 rounded border">
+                    <div className="prose prose-sm max-w-none [&_p]:mb-1 [&_p:last-child]:mb-0 [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{question.answer_explanation}</ReactMarkdown>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button onClick={handleContinue} className="w-full">
+                Continue
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2">
           <Button
             variant="ghost"
             onClick={handleSkip}
+            disabled={showExplanation}
           >
             Skip
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!canSubmit}
+            disabled={!canSubmit || showExplanation}
             className="flex items-center gap-2"
           >
             Submit Answer

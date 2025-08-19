@@ -44,6 +44,9 @@ Table knowledge_components {
   kc_id uuid [pk]
   kc_name varchar(255)
   description text
+  is_active boolean [default: true]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
 
   Note: '''
     Atomic skills or concepts (e.g., "solving linear equations", "derivatives").
@@ -87,7 +90,7 @@ Table multiple_choice_questions {
   options jsonb
 }
 
-Table written_question_entity {
+Table written_questions {
   question_id uuid [pk, ref: > questions.question_id]
   answer_explanation text
   correct_answer_text text
@@ -124,56 +127,58 @@ Table sessions {
   end_time timestamp(6) [note: 'with time zone']
   created_at timestamp(6) [note: 'with time zone']
   updated_at timestamp(6) [note: 'with time zone']
+  last_active_at timestamp(6) [default: `CURRENT_TIMESTAMP`]
 }
 
-Table student_interactions {
+Table user_interactions {
   interaction_id uuid [pk]
   session_id uuid [ref: > sessions.session_id]
   user_id uuid [ref: > users.user_id]
-  module_id uuid [ref: > modules.module_id]  // NEW
+  module_id uuid [ref: > modules.module_id]
   lesson_id uuid [ref: > lessons.lesson_id]
   question_id uuid [ref: > questions.question_id]
   scaffold_id uuid [ref: > scaffolds.scaffold_id]
-  // kc_id REMOVED - moved to interaction_kc_mapping
   interaction_type varchar(255)
   student_answer varchar(255)
   is_correct boolean
   hint_level integer
   time_spent_seconds integer
   timestamp timestamp(6)
-  p_mastery double [note: 'Average mastery across all KCs for this interaction']
 }
 
 Table interaction_kc_mapping {
-  interaction_id uuid [ref: > student_interactions.interaction_id]
+  interaction_id uuid [ref: > user_interactions.interaction_id]
   kc_id uuid [ref: > knowledge_components.kc_id]
-  weight double [note: 'weight scales the impact of an interaction on a KC’s kc_mastery_after in BKT updates.']
-  kc_mastery_before double [note: 'KC mastery before this interaction']
-  kc_mastery_after double [note: 'KC mastery after this interaction']
-  
+  weight double [default: 1.0]
+  kc_mastery_before double
+  kc_mastery_after double
+
   Indexes {
     (interaction_id, kc_id) [pk]
   }
-  
+
   Note: '''
-    Records all KCs involved in an interaction with their weights.
-    For single-KC scenarios, just one record per interaction.
-    For multi-KC scenarios, multiple records per interaction.
+    Maps user interactions to Knowledge Components with impact weights for mastery calculations.
+    weight: impact weight from question_kc_mapping or 1.0 for lesson KCs.
   '''
 }
 
-Table studentkcmastery {
+Table user_kc_mastery {
   user_id uuid [ref: > users.user_id]
   kc_id uuid [ref: > knowledge_components.kc_id]
-  p_mastery double 
-  p_guess double 
-  p_slip double 
-  p_transit double 
-  updated_at timestamp(6) [note: 'with time zone']
+  p_mastery double
+  p_guess double
+  p_slip double
+  p_transit double
+  updated_at timestamp(6)
 
   Indexes {
     (kc_id, user_id) [pk]
   }
+
+  Note: '''
+    Tracks individual user mastery levels for each Knowledge Component using BKT parameters
+  '''
 }
 
 // ===========================
@@ -182,7 +187,7 @@ Table studentkcmastery {
 
 Table roles {
   role_id uuid [pk, default: `gen_random_uuid()`]
-  name varchar(20) [not null]
+  name varchar(20)
 }
 
 Table user_roles {
@@ -208,9 +213,10 @@ Table module_kc_mapping {
 }
 
 Table module_kc_prerequisite {
-  module_id uuid
-  kc_id uuid
+  module_id uuid [ref: > module_kc_mapping.module_id]
+  kc_id uuid [ref: > module_kc_mapping.kc_id]
   prerequisite_kc_id uuid [ref: > knowledge_components.kc_id]
+  rationale text
 
   Indexes {
     (module_id, kc_id, prerequisite_kc_id) [pk]
@@ -220,9 +226,10 @@ Table module_kc_prerequisite {
 Table module_lesson_mapping {
   module_id uuid [ref: > modules.module_id]
   lesson_id uuid [ref: > lessons.lesson_id]
-  order_index integer
+  order_index integer [default: 0]
 
   Indexes {
     (module_id, lesson_id) [pk]
   }
 }
+

@@ -44,4 +44,11 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
         @Param("userAgent") String userAgent,
         @Param("cutoffTime") java.time.Instant cutoffTime
     );
+    
+    /**
+     * Find the most recent active session for a specific user
+     * Used for logging interactions when session context is needed
+     */
+    @Query("SELECT s FROM Session s WHERE s.user.user_id = :userId AND s.end_time IS NULL ORDER BY s.last_active_at DESC LIMIT 1")
+    Session findActiveSessionByUserId(@Param("userId") UUID userId);
 }

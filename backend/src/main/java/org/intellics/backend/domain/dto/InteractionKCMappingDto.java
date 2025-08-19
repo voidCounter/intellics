@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -18,4 +19,6 @@ public class InteractionKCMappingDto {
     private Double weight;
     private Double kcMasteryBefore;
     private Double kcMasteryAfter;
+    private Instant created_at;
+    private Instant updated_at;
 }

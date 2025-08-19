@@ -14,6 +14,8 @@ import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
 import { InputRule } from '@tiptap/core'
 import { Dropcursor } from '@tiptap/extensions'
+
+
 import { 
   Bold, 
   Italic, 
@@ -43,6 +45,25 @@ interface MarkdownEditorProps {
 }
 
 export default function MarkdownEditor({ value, onChange, placeholder = "Start writing..." }: MarkdownEditorProps) {
+
+
+  // Convert markdown to HTML for display in the editor
+  const markdownToHtml = (markdown: string): string => {
+    if (!markdown) return '';
+    
+    return markdown
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*)\*/gim, '<em>$1</em>')
+      .replace(/`(.*)`/gim, '<code>$1</code>')
+      .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
+      .replace(/^\* (.*$)/gim, '<ul><li>$1</li></ul>')
+      .replace(/^\d+\. (.*$)/gim, '<ol><li>$1</li></ol>')
+      .replace(/\n/gim, '<br>');
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -105,9 +126,25 @@ export default function MarkdownEditor({ value, onChange, placeholder = "Start w
         width: 2,
       }),
     ],
-    content: value,
+    content: markdownToHtml(value),
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
+      // Convert HTML back to markdown for storage
+      const html = editor.getHTML();
+      let markdown = html
+        .replace(/<h1>(.*?)<\/h1>/g, '# $1\n')
+        .replace(/<h2>(.*?)<\/h2>/g, '## $1\n')
+        .replace(/<h3>(.*?)<\/h3>/g, '### $1\n')
+        .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
+        .replace(/<em>(.*?)<\/em>/g, '*$1*')
+        .replace(/<code>(.*?)<\/code>/g, '`$1`')
+        .replace(/<blockquote>(.*?)<\/blockquote>/g, '> $1\n')
+        .replace(/<ul><li>(.*?)<\/li><\/ul>/g, '* $1\n')
+        .replace(/<ol><li>(.*?)<\/li><\/ol>/g, '1. $1\n')
+        .replace(/<br\s*\/?>/g, '\n')
+        .replace(/<p>(.*?)<\/p>/g, '$1\n')
+        .replace(/<\/?[^>]+(>|$)/g, ''); // Remove any remaining HTML tags
+      
+      onChange(markdown.trim());
     },
     editorProps: {
       attributes: {
@@ -118,6 +155,8 @@ export default function MarkdownEditor({ value, onChange, placeholder = "Start w
     enableInputRules: true,
     enablePasteRules: true,
   })
+
+
 
   if (!editor) {
     return null

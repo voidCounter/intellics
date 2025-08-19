@@ -31,6 +31,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { MarkdownContent } from '@/components/ui/markdown-content';
 
 interface LessonData {
   lesson_id: string;
@@ -162,6 +163,8 @@ export default function LessonDetailPage() {
       setEditedContent("");
     } else {
       setIsEditing(true);
+      // For now, just pass the markdown content directly
+      // The editor will handle it as plain text initially
       setEditedContent(lesson?.lesson_content || "");
     }
   };
@@ -369,10 +372,10 @@ export default function LessonDetailPage() {
               placeholder="Write your lesson content..."
             />
           ) : (
-            <div className="prose prose-sm max-w-none min-h-[500px] p-4 border rounded-lg">
-              <div
-                className="max-w-3xl mx-auto"
-                dangerouslySetInnerHTML={{ __html: lesson.lesson_content }}
+            <div className="max-w-3xl mx-auto">
+              <MarkdownContent 
+                content={lesson.lesson_content}
+                variant="admin"
               />
             </div>
           )}

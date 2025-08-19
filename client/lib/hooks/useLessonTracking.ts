@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { useProgressStore } from '../stores';
+import { useInteractionLogger } from '../services/interactionLogger';
 import { InteractionType } from '@/types/api';
 
 export function useLessonTracking() {
 	const pathname = usePathname();
-	const { addInteraction } = useProgressStore();
+	const interactionLogger = useInteractionLogger();
 	const lastLessonIdRef = useRef<number | null>(null);
 	const startTimeRef = useRef<number | null>(null);
 
@@ -23,17 +23,25 @@ export function useLessonTracking() {
 				if (lastLessonIdRef.current !== null && startTimeRef.current !== null) {
 					const timeSpent = Date.now() - startTimeRef.current;
 					if (timeSpent > 10000) {
-						addInteraction({
-							interaction_type: InteractionType.LESSON_EXIT,
-							lesson_id: lastLessonIdRef.current.toString()
+						// Log lesson exit using interactionLogger
+						interactionLogger.logLessonExit(
+							'no_session', // We don't have sessionId in this context
+							lastLessonIdRef.current.toString(),
+							undefined, // moduleId not available in this context
+							Math.floor(timeSpent / 1000)
+						).catch((error: unknown) => {
+							console.error('Failed to log lesson exit interaction:', error);
 						});
 					}
 				}
 
 				// Log the start of the new lesson
-				addInteraction({
-					interaction_type: InteractionType.LESSON_START,
-					lesson_id: lessonId.toString()
+				interactionLogger.logLessonStart(
+					'no_session', // We don't have sessionId in this context
+					lessonId.toString(),
+					undefined // moduleId not available in this context
+				).catch((error: unknown) => {
+					console.error('Failed to log lesson start interaction:', error);
 				});
 
 				lastLessonIdRef.current = lessonId;
@@ -43,9 +51,14 @@ export function useLessonTracking() {
 			const timeSpent = Date.now() - startTimeRef.current;
 			if (timeSpent > 10000) {
 				console.log('Logging lesson exit');
-				addInteraction({
-					interaction_type: InteractionType.LESSON_EXIT,
-					lesson_id: lastLessonIdRef.current.toString()
+				// Log lesson exit using interactionLogger
+				interactionLogger.logLessonExit(
+					'no_session', // We don't have sessionId in this context
+					lastLessonIdRef.current.toString(),
+					undefined, // moduleId not available in this context
+					Math.floor(timeSpent / 1000)
+				).catch((error: unknown) => {
+					console.error('Failed to log lesson exit interaction:', error);
 				});
 			}
 			lastLessonIdRef.current = null;
@@ -57,12 +70,17 @@ export function useLessonTracking() {
 			if (lastLessonIdRef.current !== null && startTimeRef.current !== null) {
 				const timeSpent = Date.now() - startTimeRef.current;
 				if (timeSpent > 10000) {
-					addInteraction({
-						interaction_type: InteractionType.LESSON_EXIT,
-						lesson_id: lastLessonIdRef.current.toString()
+					// Log lesson exit using interactionLogger
+					interactionLogger.logLessonExit(
+						'no_session', // We don't have sessionId in this context
+						lastLessonIdRef.current.toString(),
+						undefined, // moduleId not available in this context
+						Math.floor(timeSpent / 1000)
+					).catch((error: unknown) => {
+						console.error('Failed to log lesson exit interaction:', error);
 					});
 				}
 			}
 		};
-	}, [pathname, addInteraction]);
+	}, [pathname, interactionLogger]);
 }

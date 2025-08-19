@@ -1,0 +1,173 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Question, QuestionRecommendationDto } from '@/types/api';
+
+interface UseNextQuestionOptions {
+  enabled?: boolean;
+  staleTime?: number;
+  refetchOnWindowFocus?: boolean;
+}
+
+export function useNextQuestion(
+  lessonId?: string,
+  moduleId?: string,
+  options: UseNextQuestionOptions = {}
+) {
+  return useQuery({
+    queryKey: ['next-question', lessonId, moduleId],
+    queryFn: async (): Promise<Question | null> => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      // Point to Spring Boot backend
+      const url = new URL('/api/v1/recommendations/next-question', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1');
+      if (lessonId) url.searchParams.set('lessonId', lessonId);
+      if (moduleId) url.searchParams.set('moduleId', moduleId);
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 204) {
+        return null; // No more questions
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch next question');
+      }
+
+      const data = await response.json();
+      return data.data;
+    },
+    enabled: options.enabled ?? true,
+    staleTime: options.staleTime ?? 0, // Always fresh for next question
+    refetchOnWindowFocus: options.refetchOnWindowFocus ?? false,
+  });
+}
+
+export function useNextQuestionWithScaffolds(
+  lessonId?: string,
+  moduleId?: string,
+  options: UseNextQuestionOptions = {}
+) {
+  return useQuery({
+    queryKey: ['next-question-with-scaffolds', lessonId, moduleId],
+    queryFn: async (): Promise<Question | null> => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      // Point to Spring Boot backend
+      const url = new URL('/api/v1/recommendations/next-question-with-scaffolds', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1');
+      if (lessonId) url.searchParams.set('lessonId', lessonId);
+      if (moduleId) url.searchParams.set('moduleId', moduleId);
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 204) {
+        return null; // No more questions
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch next question with scaffolds');
+      }
+
+      const data = await response.json();
+      return data.data;
+    },
+    enabled: options.enabled ?? true,
+    staleTime: options.staleTime ?? 0, // Always fresh for next question
+    refetchOnWindowFocus: options.refetchOnWindowFocus ?? false,
+  });
+}
+
+export function usePracticeSession(
+  lessonId?: string,
+  moduleId?: string,
+  count: number = 5,
+  options: UseNextQuestionOptions = {}
+) {
+  return useQuery({
+    queryKey: ['practice-session', lessonId, moduleId, count],
+    queryFn: async (): Promise<QuestionRecommendationDto[]> => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      // Point to Spring Boot backend
+      const url = new URL('/api/v1/recommendations/practice-session', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1');
+      url.searchParams.set('count', count.toString());
+      if (lessonId) url.searchParams.set('lessonId', lessonId);
+      if (moduleId) url.searchParams.set('moduleId', moduleId);
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch practice session');
+      }
+
+      const data = await response.json();
+      return data.data;
+    },
+    enabled: options.enabled ?? true,
+    staleTime: options.staleTime ?? 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: options.refetchOnWindowFocus ?? false,
+  });
+}
+
+// Hook for getting the next question after answering
+export function useGetNextQuestion() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ lessonId, moduleId }: { lessonId?: string; moduleId?: string }): Promise<Question | null> => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      // Point to Spring Boot backend
+      const url = new URL('/api/v1/recommendations/next-question-with-scaffolds', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1');
+      if (lessonId) url.searchParams.set('lessonId', lessonId);
+      if (moduleId) url.searchParams.set('moduleId', moduleId);
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 204) {
+        return null; // No more questions
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch next question with scaffolds');
+      }
+
+      const data = await response.json();
+      return data.data;
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate the query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['next-question-with-scaffolds', variables.lessonId, variables.moduleId] });
+    },
+  });
+}

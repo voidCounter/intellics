@@ -7,19 +7,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, ArrowLeft } from 'lucide-react';
-import { useData } from '@/hooks/useData';
-import { Module, Lesson } from '@/types/api';
+import { useModuleData } from '@/hooks/useModuleData';
+import { Module, ModuleLessonMapping } from '@/types/api';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 
 export default function ModulePageClient() {
   const params = useParams();
-  const { modules, lessons, loadData } = useData();
+  const { modules, lessons, isLoading, error } = useModuleData(params.module_id as string);
   const [currentModule, setCurrentModule] = useState<Module | null>(null);
-  const [moduleLessons, setModuleLessons] = useState<Lesson[]>([]);
+  const [moduleLessons, setModuleLessons] = useState<ModuleLessonMapping[]>([]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  // Helper function to truncate text at word boundary
+  const truncateText = (text: string, maxLength: number = 120): string => {
+    if (text.length <= maxLength) return text;
+    
+    // Find the last space before maxLength
+    const truncated = text.substring(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(' ');
+    
+    if (lastSpace > 0) {
+      return truncated.substring(0, lastSpace) + '...';
+    }
+    
+    return truncated + '...';
+  };
+
+  // React Query handles loading automatically, no need for manual useEffect
 
   useEffect(() => {
     if (modules.length > 0 && params.module_id) {
@@ -32,12 +45,36 @@ export default function ModulePageClient() {
     }
   }, [modules, lessons, params.module_id]);
 
+  if (isLoading) {
+    return (
+      <ProtectedRoute>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <p className="text-gray-600">Loading modules...</p>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  if (error) {
+    return (
+      <ProtectedRoute>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <p className="text-red-600">Error loading modules: {error}</p>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
   if (!currentModule) {
     return (
       <ProtectedRoute>
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <p className="text-gray-600">Loading module...</p>
+            <p className="text-gray-600">Module not found</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -46,10 +83,10 @@ export default function ModulePageClient() {
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Back Button */}
         <div className="mb-6">
-          <Button variant="ghost" asChild className="flex items-center gap-2">
+          <Button variant="link" asChild className="flex items-center gap-2 w-fit">
             <Link href="/">
               <ArrowLeft className="h-4 w-4" />
               Back to Home
@@ -58,7 +95,7 @@ export default function ModulePageClient() {
         </div>
         {/* Module Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-4 mb-4">
             <div className="bg-blue-600 p-3 rounded-lg">
               <BookOpen className="h-6 w-6 text-white" />
             </div>
@@ -74,23 +111,46 @@ export default function ModulePageClient() {
         {/* Lessons Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {moduleLessons.map((lesson, index) => (
-            <Card key={lesson.lesson_id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
+            <Card key={lesson.lessonId} className="hover:shadow-lg transition-shadow flex flex-col">
+              <CardHeader className='gap-2'>
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="text-xs">
                     Lesson {index + 1}
                   </Badge>
                 </div>
-                <CardTitle className="text-lg leading-tight">
-                  {lesson.lesson_name}
+                <CardTitle className="text-lg font-bold leading-tight">
+                  {lesson.lessonName}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-4 text-sm leading-relaxed">
-                  {lesson.lesson_content.substring(0, 150)}...
-                </p>
-                <Button asChild className="w-full">
-                  <Link href={`/lessons/${lesson.lesson_id}`}>
+              <CardContent className="flex flex-col flex-1 justify-between -mt-4">
+                <div className="text-gray-600 mb-4 text-sm leading-relaxed prose prose-sm max-w-none">
+                  <div className="text-gray-600 text-sm leading-relaxed">
+                    {(() => {
+                      const text = lesson.shortDescription || lesson.lessonName;
+                      const truncatedText = truncateText(text, 120);
+                      
+                      // Simple markdown rendering for basic formatting
+                      const formattedText = truncatedText
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+                        .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-xs">$1</code>') // Inline code
+                        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:underline">$1</a>'); // Links
+                      
+                      return (
+                        <div 
+                          dangerouslySetInnerHTML={{ __html: formattedText }}
+                          className="prose prose-sm max-w-none"
+                        />
+                      );
+                    })()}
+                  </div>
+                </div>
+                <Button 
+                  asChild 
+                  variant={"secondary"}
+                  className=""
+                >
+                  <Link href={`/modules/${params.module_id}/lessons/${lesson.lessonId}`}>
                     Start Lesson
                   </Link>
                 </Button>

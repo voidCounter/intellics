@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, X } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Scaffold } from '@/types/api';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ScaffoldCardProps {
   scaffold: Scaffold;
@@ -25,20 +25,16 @@ export function ScaffoldCard({
   scaffoldNumber,
   totalScaffolds
 }: ScaffoldCardProps) {
-  const [selectedAnswer, setSelectedAnswer] = useState('');
   const [writtenAnswer, setWrittenAnswer] = useState('');
 
   const handleSubmit = () => {
-    const answer = scaffold.scaffold_type === 'multiple_choice' ? selectedAnswer : writtenAnswer;
-    if (!answer.trim()) return;
+    if (!writtenAnswer.trim()) return;
 
-    const isCorrect = answer.toLowerCase().trim() === scaffold.correct_answer.toLowerCase().trim();
-    onSubmit(answer, isCorrect);
+    const isCorrect = writtenAnswer.toLowerCase().trim() === scaffold.scaffoldCorrectAnswer.toLowerCase().trim();
+    onSubmit(writtenAnswer, isCorrect);
   };
 
-  const canSubmit = scaffold.scaffold_type === 'multiple_choice'
-    ? selectedAnswer !== ''
-    : writtenAnswer.trim() !== '';
+  const canSubmit = writtenAnswer.trim() !== '';
 
   return (
     <Card className="w-full max-w-2xl mx-auto border-orange-200 bg-orange-50/50">
@@ -51,36 +47,27 @@ export function ScaffoldCard({
               </Badge>
             </div>
             <CardTitle className="text-lg leading-relaxed">
-              {scaffold.scaffold_text}
+              <div className="prose prose-md max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-gray-50 [&_pre]:border [&_pre]:border-gray-200 [&_pre]:p-3 [&_pre]:rounded [&_pre]:overflow-x-auto">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{scaffold.scaffoldText}</ReactMarkdown>
+              </div>
             </CardTitle>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {scaffold.scaffold_type === 'multiple_choice' ? (
-          <RadioGroup value={selectedAnswer} onValueChange={setSelectedAnswer}>
-            {scaffold.options?.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <RadioGroupItem value={option} id={`scaffold-option-${index}`} />
-                <Label htmlFor={`scaffold-option-${index}`} className="flex-1 cursor-pointer">
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        ) : (
-          <div className="space-y-2">
-            <Label htmlFor="scaffold-answer">Your Answer:</Label>
-            <Textarea
-              id="scaffold-answer"
-              placeholder="Type your answer here..."
-              value={writtenAnswer}
-              onChange={(e) => setWrittenAnswer(e.target.value)}
-              className="min-h-[100px]"
-            />
-          </div>
-        )}
+        <div className="space-y-2">
+          <label htmlFor="scaffold-answer" className="text-sm font-medium text-gray-700">
+            Your Answer:
+          </label>
+          <Textarea
+            id="scaffold-answer"
+            placeholder="Type your answer here..."
+            value={writtenAnswer}
+            onChange={(e) => setWrittenAnswer(e.target.value)}
+            className="min-h-[100px]"
+          />
+        </div>
 
         <div className="flex justify-end">
           <Button

@@ -10,6 +10,7 @@ import org.intellics.backend.api.ApiResponseDto;
 import org.intellics.backend.api.ApiResponseStatus;
 import org.intellics.backend.api.PaginatedResponseDto;
 import org.intellics.backend.domain.dto.UserInteractionDto;
+import org.intellics.backend.domain.dto.UserInteractionRequestDto;
 import org.intellics.backend.domain.entities.InteractionType;
 import org.intellics.backend.services.UserInteractionService;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -101,6 +104,19 @@ public class UserInteractionController {
                 .status(ApiResponseStatus.SUCCESS)
                 .message("User interactions retrieved successfully")
                 .data(response)
+                .build()
+        );
+    }
+
+    @PostMapping("/track")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponseDto<UserInteractionDto>> trackInteraction(@RequestBody UserInteractionRequestDto request) {
+        UserInteractionDto interaction = userInteractionService.createInteraction(request);
+        return ResponseEntity.ok(
+            ApiResponseDto.<UserInteractionDto>builder()
+                .status(ApiResponseStatus.SUCCESS)
+                .message("Interaction tracked successfully")
+                .data(interaction)
                 .build()
         );
     }

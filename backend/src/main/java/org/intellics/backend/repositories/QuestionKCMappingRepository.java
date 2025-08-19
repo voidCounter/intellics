@@ -8,7 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface QuestionKCMappingRepository extends JpaRepository<QuestionKCMapping, QuestionKCMappingId> {
     
     @Query("SELECT qkm FROM QuestionKCMapping qkm WHERE qkm.mappingId.question_id = :questionId")
@@ -20,4 +22,10 @@ public interface QuestionKCMappingRepository extends JpaRepository<QuestionKCMap
     
     @Query("SELECT COUNT(qkm) > 0 FROM QuestionKCMapping qkm WHERE qkm.mappingId.question_id = :questionId AND qkm.mappingId.kc_id = :kcId")
     boolean existsByQuestionIdAndKcId(@Param("questionId") UUID questionId, @Param("kcId") UUID kcId);
+    
+    /**
+     * Find all KC mappings for a specific KC
+     */
+    @Query("SELECT qkm FROM QuestionKCMapping qkm WHERE qkm.mappingId.kc_id = :kcId")
+    List<QuestionKCMapping> findByKcId(@Param("kcId") UUID kcId);
 }

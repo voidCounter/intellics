@@ -33,30 +33,30 @@ public class UserInteraction {
     private UUID interaction_id;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "session_id")
+    @JoinColumn(name = "session_id", nullable = false)
     private Session session;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
     
     @Enumerated(EnumType.STRING)
     private InteractionType interactionType;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lesson_id")
+    @JoinColumn(name = "lesson_id", nullable = true)
     private Lesson lesson;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "question_id")
+    @JoinColumn(name = "question_id", nullable = true)
     private QuestionEntity question;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "scaffold_id")
+    @JoinColumn(name = "scaffold_id", nullable = true)
     private Scaffold scaffold;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "module_id")
+    @JoinColumn(name = "module_id", nullable = true)
     private Module module;
     
     private String student_answer;

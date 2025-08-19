@@ -33,6 +33,7 @@ export interface Lesson {
   lesson_id: string; // UUID from backend
   lesson_name: string;
   lesson_content: string;
+  short_description?: string; // Optional for backward compatibility
 }
 
 // Lesson title only (for dropdowns)
@@ -105,6 +106,7 @@ export interface ModuleLessonMapping {
   lessonId: string;
   moduleName: string;
   lessonName: string;
+  shortDescription: string;
   orderIndex: number;
 }
 
@@ -178,11 +180,13 @@ export interface InteractionKCMapping {
 export enum InteractionType {
   LESSON_START = 'LESSON_START',
   LESSON_EXIT = 'LESSON_EXIT',
-  START_TEST = 'START_TEST',
-  TEST_EXIT = 'TEST_EXIT',
-  QUIZ_ANSWER = 'QUIZ_ANSWER',
-  HINT_REQUEST = 'HINT_REQUEST',
-  SCAFFOLD_ANSWER = 'SCAFFOLD_ANSWER'
+  HINT_REQUESTED = 'HINT_REQUESTED',
+  SCAFFOLD_REQUESTED = 'SCAFFOLD_REQUESTED',
+  SCAFFOLD_ATTEMPTED = 'SCAFFOLD_ATTEMPTED',
+  SCAFFOLD_ANSWER = 'SCAFFOLD_ANSWER',
+  QUESTION_PRESENTED = 'QUESTION_PRESENTED',
+  QUESTION_ATTEMPTED = 'QUESTION_ATTEMPTED',
+  QUESTION_SKIPPED = 'QUESTION_SKIPPED'
 }
 
 // Session types matching backend SessionDto
@@ -210,4 +214,28 @@ export interface UserSession {
   createdAt: string;
   updatedAt: string;
   interactionCount: number;
+}
+
+// Question Recommendation types
+export interface QuestionRecommendationDto {
+  question_id: string;
+  question_text: string;
+  primary_kc: string;
+  priority_score: number;
+  mastery_gap: number;
+  recency_factor: number;
+  last_correct_answer?: string;
+  kc_name?: string;
+  question_type?: string;
+  difficulty_level?: number;
+}
+
+export interface QuestionRecommendationRequestDto {
+  context: 'lesson' | 'global';
+  lesson_id?: string;
+  module_id?: string;
+  limit?: number;
+  include_prerequisites?: boolean;
+  max_recency_days?: number;
+  per_kc_limit?: number;
 }

@@ -7,6 +7,7 @@ spring:
   flyway:
     locations: classpath:db/migration
     baseline-on-migrate: true
+    validate-on-migrate: false
     baseline-version: 0
 
 # OpenAPI/Swagger Configuration
@@ -34,3 +35,4 @@ logging:
   level:
     org.springframework.security: DEBUG
     org.intellics.backend.services.impl.SessionCleanupServiceImpl: DEBUG
+    org.intellics.backend.services.impl.UserInteractionServiceImpl: DEBUG

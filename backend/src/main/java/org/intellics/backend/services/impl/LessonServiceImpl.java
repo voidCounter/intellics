@@ -59,6 +59,7 @@ public class LessonServiceImpl implements LessonService {
                 .lesson_id(lesson.getLesson_id())
                 .lesson_name(lesson.getLesson_name())
                 .lesson_content(lesson.getLesson_content())
+                .short_description(lesson.getShort_description())
                 .knowledgeComponents(kcMappings.stream()
                         .map(mapping -> {
                             // Get KC details - filter out inactive/deleted KCs
@@ -128,6 +129,15 @@ public class LessonServiceImpl implements LessonService {
         lesson.setLesson_name(lessonName);
         lesson.setLesson_content(lessonContent);
         
+        // Set short_description - if not provided, generate from content
+        String shortDescription = lessonDto.getShort_description();
+        if (shortDescription == null || shortDescription.trim().isEmpty()) {
+            shortDescription = lessonContent.length() > 150 ? 
+                lessonContent.substring(0, 147) + "..." : 
+                lessonContent;
+        }
+        lesson.setShort_description(shortDescription.trim());
+        
         Lesson savedLesson = lessonRepository.save(lesson);
         return lessonMapper.mapTo(savedLesson);
     }
@@ -153,10 +163,22 @@ public class LessonServiceImpl implements LessonService {
         if (lessonContent.isEmpty()) {
             throw new IllegalArgumentException("Lesson content cannot be empty");
         }
-        if (lessonContent.length() > 100000) {
-            throw new IllegalArgumentException("Lesson content cannot exceed 100000 characters");
-        }
         existingLesson.setLesson_content(lessonContent);
+        
+        // Update short_description if provided, otherwise regenerate from content
+        if (lessonDto.getShort_description() != null) {
+            String shortDescription = lessonDto.getShort_description().trim();
+            if (shortDescription.length() > 500) {
+                throw new IllegalArgumentException("Short description cannot exceed 500 characters");
+            }
+            existingLesson.setShort_description(shortDescription);
+        } else {
+            // Regenerate from content
+            String shortDescription = lessonContent.length() > 150 ? 
+                lessonContent.substring(0, 147) + "..." : 
+                lessonContent;
+            existingLesson.setShort_description(shortDescription);
+        }
         
         Lesson updatedLesson = lessonRepository.save(existingLesson);
         return lessonMapper.mapTo(updatedLesson);
@@ -186,10 +208,25 @@ public class LessonServiceImpl implements LessonService {
             if (lessonContent.isEmpty()) {
                 throw new IllegalArgumentException("Lesson content cannot be empty");
             }
-            if (lessonContent.length() > 10000) {
-                throw new IllegalArgumentException("Lesson content cannot exceed 10000 characters");
+            if (lessonContent.length() > 100000) {
+                throw new IllegalArgumentException("Lesson content cannot exceed 100000 characters");
             }
             existingLesson.setLesson_content(lessonContent);
+            
+            // Regenerate short_description if content changed
+            String shortDescription = lessonContent.length() > 150 ? 
+                lessonContent.substring(0, 147) + "..." : 
+                lessonContent;
+            existingLesson.setShort_description(shortDescription);
+        }
+        
+        // Validate and update short_description if provided
+        if (lessonDto.getShort_description() != null) {
+            String shortDescription = lessonDto.getShort_description().trim();
+            if (shortDescription.length() > 500) {
+                throw new IllegalArgumentException("Short description cannot exceed 500 characters");
+            }
+            existingLesson.setShort_description(shortDescription);
         }
         
         Lesson patchedLesson = lessonRepository.save(existingLesson);

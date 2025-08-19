@@ -18,6 +18,7 @@ public class LessonWithKCsDto {
     private UUID lesson_id;
     private String lesson_name;
     private String lesson_content;
+    private String short_description;
     private List<LessonKCInfoDto> knowledgeComponents;
     
     @Data

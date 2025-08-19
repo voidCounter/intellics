@@ -5,30 +5,61 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuthStore, useMainStore } from '@/lib/stores';
-import { useData } from '@/hooks/useData';
+import { useHomeData } from '@/hooks/useHomeData';
 import { toast } from "sonner";
 import { ProtectedRoute } from '@/components/auth/protected-route';
 
 export default function Home() {
-  const { modules, loadData } = useData();
+  const { modules, isLoading, error, loadModules } = useHomeData();
   const { isAuthenticated } = useAuthStore();
   const { resetAllStores } = useMainStore();
 
   useEffect(() => {
     // We only load data if the user is authenticated
     if (isAuthenticated) {
-      loadData();
+      loadModules();
     }
-  }, [loadData, isAuthenticated]);
+  }, [loadModules, isAuthenticated]);
 
   const handleReset = () => {
     resetAllStores();
     toast.success("All data has been reset successfully!");
   };
 
+  if (isLoading) {
+    return (
+      <ProtectedRoute>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <p className="text-gray-600">Loading modules...</p>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  if (error) {
+    return (
+      <ProtectedRoute>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <p className="text-red-600">Error loading modules: {error}</p>
+            <Button 
+              onClick={() => loadModules()} 
+              className="mt-4"
+              variant="outline"
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex justify-end mb-4">
           <Button
             variant="destructive"

@@ -1,7 +1,6 @@
 import { useAuthStore } from './auth-store';
 import { useContentStore } from './content-store';
 import { useLearningStore } from './learning-store';
-import { useProgressStore } from './progress-store';
 import { useSessionStore } from './session-store';
 
 // Main store hook that provides access to all domain stores
@@ -10,7 +9,6 @@ export const useMainStore = () => {
   const auth = useAuthStore();
   const content = useContentStore();
   const learning = useLearningStore();
-  const progress = useProgressStore();
   const session = useSessionStore();
 
   // Combined reset function for all stores
@@ -18,7 +16,6 @@ export const useMainStore = () => {
     auth.resetAuth();
     content.resetContent();
     learning.resetLearning();
-    progress.resetProgress();
     session.clearSession();
   };
 
@@ -63,9 +60,6 @@ export const useMainStore = () => {
     // Learning state and actions
     ...learning,
     
-    // Progress state and actions
-    ...progress,
-    
     // Session state and actions
     ...session,
     
@@ -76,4 +70,4 @@ export const useMainStore = () => {
 };
 
 // Export individual store hooks for direct access
-export { useAuthStore, useContentStore, useLearningStore, useProgressStore, useSessionStore };
+export { useAuthStore, useContentStore, useLearningStore, useSessionStore };

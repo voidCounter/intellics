@@ -16,5 +16,6 @@ public class ModuleLessonMappingDto {
     private UUID lessonId;
     private String moduleName;
     private String lessonName;
+    private String shortDescription;
     private Integer orderIndex;
 }

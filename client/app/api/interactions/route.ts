@@ -13,20 +13,31 @@ export async function POST(request: NextRequest) {
 
     // Parse the interaction data from the request body
     const interactionData = await request.json();
+    
+    // Log what we're sending to debug the issue
+    console.log('Frontend sending interaction data:', JSON.stringify(interactionData, null, 2));
 
-    // For now, just log the interaction since backend doesn't support creation yet
-    console.log('Interaction received:', interactionData);
+    // Call the backend API to create the interaction
+    const backendResponse = await fetch(`${process.env.BACKEND_URL || 'http://localhost:8080'}/api/v1/interactions/track`, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(interactionData),
+    });
 
-    // Return a simple success response
-    return NextResponse.json({
-      status: 'SUCCESS',
-      message: 'Interaction logged successfully',
-      data: {
-        interaction_id: `local_${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        ...interactionData
-      }
-    }, { status: 201 });
+    if (backendResponse.ok) {
+      const backendData = await backendResponse.json();
+      return NextResponse.json(backendData, { status: 201 });
+    } else {
+      const errorText = await backendResponse.text();
+      console.error('Backend interaction creation failed:', errorText);
+      return NextResponse.json(
+        { error: 'Failed to create interaction on backend' },
+        { status: backendResponse.status }
+      );
+    }
 
   } catch (error) {
     console.error('Interaction logging error:', error);

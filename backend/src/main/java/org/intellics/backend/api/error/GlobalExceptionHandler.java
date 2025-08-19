@@ -20,15 +20,37 @@ import org.springframework.dao.DataIntegrityViolationException;
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ItemNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleItemNotFoundException(ItemNotFoundException ex,
-                                                                     ServletWebRequest req) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-            .timestamp(LocalDateTime.now())
+    public ResponseEntity<ErrorResponse> handleItemNotFoundException(ItemNotFoundException ex) {
+        ErrorResponse error = ErrorResponse.builder()
             .status(HttpStatus.NOT_FOUND.value())
-            .error(HttpStatus.NOT_FOUND.getReasonPhrase())
+            .error("Item not found")
             .message(ex.getMessage())
-            .path(req.getRequest().getRequestURI()).build();
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+            .timestamp(LocalDateTime.now())
+            .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+    
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
+        // Handle duplicate interaction specifically
+        if (ex.getMessage() != null && ex.getMessage().contains("Duplicate interaction")) {
+            ErrorResponse error = ErrorResponse.builder()
+                .status(HttpStatus.CONFLICT.value())
+                .error("Duplicate interaction")
+                .message("This interaction has already been processed")
+                .timestamp(LocalDateTime.now())
+                .build();
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        }
+        
+        // Handle other runtime exceptions
+        ErrorResponse error = ErrorResponse.builder()
+            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .error("Internal server error")
+            .message(ex.getMessage())
+            .timestamp(LocalDateTime.now())
+            .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
