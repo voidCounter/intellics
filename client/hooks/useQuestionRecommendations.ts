@@ -5,6 +5,8 @@ interface UseNextQuestionOptions {
   enabled?: boolean;
   staleTime?: number;
   refetchOnWindowFocus?: boolean;
+  refetchOnMount?: boolean;
+  refetchOnReconnect?: boolean;
 }
 
 export function useNextQuestion(
@@ -44,8 +46,10 @@ export function useNextQuestion(
       return data.data;
     },
     enabled: options.enabled ?? true,
-    staleTime: options.staleTime ?? 0, // Always fresh for next question
+    staleTime: options.staleTime ?? 5 * 60 * 1000, // 5 minutes - prevent unnecessary refetches
     refetchOnWindowFocus: options.refetchOnWindowFocus ?? false,
+    refetchOnMount: options.refetchOnMount ?? false,
+    refetchOnReconnect: options.refetchOnReconnect ?? false,
   });
 }
 
@@ -66,6 +70,11 @@ export function useNextQuestionWithScaffolds(
       const url = new URL('/api/v1/recommendations/next-question-with-scaffolds', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1');
       if (lessonId) url.searchParams.set('lessonId', lessonId);
       if (moduleId) url.searchParams.set('moduleId', moduleId);
+      
+      // For module practice, use "all" scope to get questions from all KCs
+      if (moduleId && !lessonId) {
+        url.searchParams.set('scope', 'all');
+      }
 
       const response = await fetch(url.toString(), {
         method: 'GET',
@@ -86,8 +95,10 @@ export function useNextQuestionWithScaffolds(
       return data.data;
     },
     enabled: options.enabled ?? true,
-    staleTime: options.staleTime ?? 0, // Always fresh for next question
+    staleTime: options.staleTime ?? 5 * 60 * 1000, // 5 minutes - prevent unnecessary refetches
     refetchOnWindowFocus: options.refetchOnWindowFocus ?? false,
+    refetchOnMount: options.refetchOnMount ?? false,
+    refetchOnReconnect: options.refetchOnReconnect ?? false,
   });
 }
 
@@ -146,6 +157,11 @@ export function useGetNextQuestion() {
       const url = new URL('/api/v1/recommendations/next-question-with-scaffolds', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1');
       if (lessonId) url.searchParams.set('lessonId', lessonId);
       if (moduleId) url.searchParams.set('moduleId', moduleId);
+      
+      // For module practice, use "all" scope to get questions from all KCs
+      if (moduleId && !lessonId) {
+        url.searchParams.set('scope', 'all');
+      }
 
       const response = await fetch(url.toString(), {
         method: 'GET',

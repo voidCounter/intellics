@@ -11,7 +11,15 @@ const config: Config = {
   	extend: {
   		fontFamily: {
   			sans: [
+  				'var(--font-dm-sans)',
   				'DM Sans',
+  				'-apple-system',
+  				'BlinkMacSystemFont',
+  				'Segoe UI',
+  				'Roboto',
+  				'Oxygen',
+  				'Ubuntu',
+  				'Cantarell',
   				'sans-serif'
   			]
   		},

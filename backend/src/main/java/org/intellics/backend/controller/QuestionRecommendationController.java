@@ -49,10 +49,13 @@ public class QuestionRecommendationController {
             @RequestParam(required = false) UUID moduleId,
             
             @Parameter(description = "Include prerequisites (default: true for global, false for lesson)") 
-            @RequestParam(required = false) Boolean includePrerequisites) {
+            @RequestParam(required = false) Boolean includePrerequisites,
+            
+            @Parameter(description = "Scope for module practice: 'all' for all KCs, 'current' for current mastery level") 
+            @RequestParam(required = false, defaultValue = "current") String scope) {
         
         UUID userId = getCurrentUserId();
-        QuestionDto nextQuestion = questionRecommendationService.getNextQuestion(userId, lessonId, moduleId, includePrerequisites);
+        QuestionDto nextQuestion = questionRecommendationService.getNextQuestion(userId, lessonId, moduleId, includePrerequisites, scope);
         
         if (nextQuestion == null) {
             return ResponseEntity.noContent().build();
@@ -87,10 +90,13 @@ public class QuestionRecommendationController {
             @RequestParam(required = false) UUID moduleId,
             
             @Parameter(description = "Include prerequisites (default: true for global, false for lesson)") 
-            @RequestParam(required = false) Boolean includePrerequisites) {
+            @RequestParam(required = false) Boolean includePrerequisites,
+            
+            @Parameter(description = "Scope for module practice: 'all' for all KCs, 'current' for current mastery level") 
+            @RequestParam(required = false, defaultValue = "current") String scope) {
         
         UUID userId = getCurrentUserId();
-        QuestionWithScaffoldsDto nextQuestion = questionRecommendationService.getNextQuestionWithScaffolds(userId, lessonId, moduleId, includePrerequisites);
+        QuestionWithScaffoldsDto nextQuestion = questionRecommendationService.getNextQuestionWithScaffolds(userId, lessonId, moduleId, includePrerequisites, scope);
         
         if (nextQuestion == null) {
             return ResponseEntity.noContent().build();
@@ -127,10 +133,13 @@ public class QuestionRecommendationController {
             @RequestParam(defaultValue = "5") int count,
             
             @Parameter(description = "Include prerequisites (default: true for global, false for lesson)") 
-            @RequestParam(required = false) Boolean includePrerequisites) {
+            @RequestParam(required = false) Boolean includePrerequisites,
+            
+            @Parameter(description = "Scope for module practice: 'all' for all KCs, 'current' for current mastery level") 
+            @RequestParam(required = false, defaultValue = "current") String scope) {
         
         UUID userId = getCurrentUserId();
-        List<QuestionRecommendationDto> questions = questionRecommendationService.getPracticeSession(userId, lessonId, moduleId, count, includePrerequisites);
+        List<QuestionRecommendationDto> questions = questionRecommendationService.getPracticeSession(userId, lessonId, moduleId, count, includePrerequisites, scope);
         
         return ResponseEntity.ok(
             ApiResponseDto.<List<QuestionRecommendationDto>>builder()

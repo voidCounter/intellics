@@ -7,6 +7,7 @@ import { useAllQuestions } from "@/hooks/useQuestions"
 import { useAddKCToQuestion, useRemoveKCFromQuestion, useUpdateKCWeight } from "@/hooks/useKnowledgeComponent"
 import { LinkedItems } from "./linked-items"
 
+import { logger } from '@/lib/utils';
 interface LinkedQuestion {
   question_id: string
   question_text: string
@@ -92,7 +93,7 @@ export function LinkedQuestionsWrapper({ questions, kcId, onQuestionsChange, nav
         onQuestionsChange(updatedQuestions)
       }
     } catch (error) {
-      console.error('Error updating weight:', error)
+      logger.error('Error updating weight:', error)
       // Revert the local change on error
       question.weight = question.weight
     }

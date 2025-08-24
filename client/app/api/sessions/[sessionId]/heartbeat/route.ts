@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/utils';
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> }
@@ -29,7 +30,7 @@ export async function PUT(
     return NextResponse.json(responseData, { status: backendResponse.status });
 
   } catch (error) {
-    console.error('Session heartbeat error:', error);
+    logger.error('Session heartbeat error:', error);
     return NextResponse.json(
       { error: 'Failed to update session heartbeat' },
       { status: 500 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/utils';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 
 export async function POST(
@@ -49,7 +50,7 @@ export async function POST(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error creating question-KC mapping:', error);
+    logger.error('Error creating question-KC mapping:', error);
     return NextResponse.json(
       { error: 'Failed to create question-KC mapping' },
       { status: 500 }

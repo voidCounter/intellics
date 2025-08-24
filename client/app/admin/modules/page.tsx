@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
+import { logger } from '@/lib/utils';
 // Utility function to truncate text to a word limit
 const truncateText = (text: string, wordLimit: number = 15): string => {
   if (!text) return 'No description available';
@@ -141,7 +142,7 @@ export default function ModulesPage() {
       setDeleteDialogOpen(false);
       setModuleToDelete(null);
     } catch (error) {
-      console.error('Error deleting module:', error);
+      logger.error('Error deleting module:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to delete module');
     } finally {
       setDeletingModuleId(null);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+import { logger } from '@/lib/utils';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
       })
 
     if (error) {
-      console.error('Supabase upload error:', error)
+      logger.error('Supabase upload error:', error)
       return NextResponse.json(
         { error: 'Failed to upload image' },
         { status: 500 }
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Upload error:', error)
+    logger.error('Upload error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

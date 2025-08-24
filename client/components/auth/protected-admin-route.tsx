@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { useRouter } from 'next/navigation';
 
+import { logger } from '@/lib/utils';
 interface ProtectedAdminRouteProps {
   children: React.ReactNode;
 }
@@ -44,7 +45,7 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
             const isAdmin = currentUser.roles.some((role: any) => role.name === 'ROLE_ADMIN');
             
             if (!isAdmin) {
-              console.warn('User does not have admin role, redirecting to home');
+              logger.warn('User does not have admin role, redirecting to home');
               router.push('/');
               return;
             }
@@ -52,12 +53,12 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
             // User has admin role, allow access
             setIsCheckingAdminRole(false);
           } else {
-            console.error('Failed to verify admin role');
+            logger.error('Failed to verify admin role');
             router.push('/');
             return;
           }
         } catch (error) {
-          console.error('Error checking admin role:', error);
+          logger.error('Error checking admin role:', error);
           router.push('/');
           return;
         }

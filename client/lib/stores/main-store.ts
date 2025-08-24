@@ -3,6 +3,7 @@ import { useContentStore } from './content-store';
 import { useLearningStore } from './learning-store';
 import { useSessionStore } from './session-store';
 
+import { logger } from '@/lib/utils';
 // Main store hook that provides access to all domain stores
 // This maintains backward compatibility while using the new domain structure
 export const useMainStore = () => {
@@ -33,9 +34,9 @@ export const useMainStore = () => {
                 'Authorization': `Bearer ${token}`,
               },
             });
-            console.log('✅ Session ended successfully on logout');
+            logger.log('✅ Session ended successfully on logout');
           } catch (error) {
-            console.warn('⚠️ Failed to end session on logout:', error);
+            logger.warn('⚠️ Failed to end session on logout:', error);
             // Continue with logout even if session ending fails
           }
         }
@@ -44,7 +45,7 @@ export const useMainStore = () => {
       // Clear local state
       session.clearSession();
     } catch (error) {
-      console.warn('⚠️ Error during session cleanup on logout:', error);
+      logger.warn('⚠️ Error during session cleanup on logout:', error);
     }
     
     await auth.logout(resetAllStores);

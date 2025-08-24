@@ -3,6 +3,7 @@ import { usePathname } from 'next/navigation';
 import { useInteractionLogger } from '../services/interactionLogger';
 import { InteractionType } from '@/types/api';
 
+import { logger } from '@/lib/utils';
 export function useLessonTracking() {
 	const pathname = usePathname();
 	const interactionLogger = useInteractionLogger();
@@ -10,7 +11,7 @@ export function useLessonTracking() {
 	const startTimeRef = useRef<number | null>(null);
 
 	useEffect(() => {
-		console.log('Pathname changed:', pathname);
+		logger.log('Pathname changed:', pathname);
 		const lessonMatch = pathname.match(/^\/lessons\/(\d+)$/);
 		const isLeavingLesson = !lessonMatch && !pathname.startsWith('/lessons');
 
@@ -30,7 +31,7 @@ export function useLessonTracking() {
 							undefined, // moduleId not available in this context
 							Math.floor(timeSpent / 1000)
 						).catch((error: unknown) => {
-							console.error('Failed to log lesson exit interaction:', error);
+							logger.error('Failed to log lesson exit interaction:', error);
 						});
 					}
 				}
@@ -41,7 +42,7 @@ export function useLessonTracking() {
 					lessonId.toString(),
 					undefined // moduleId not available in this context
 				).catch((error: unknown) => {
-					console.error('Failed to log lesson start interaction:', error);
+					logger.error('Failed to log lesson start interaction:', error);
 				});
 
 				lastLessonIdRef.current = lessonId;
@@ -50,7 +51,7 @@ export function useLessonTracking() {
 		} else if (isLeavingLesson && lastLessonIdRef.current !== null && startTimeRef.current !== null) {
 			const timeSpent = Date.now() - startTimeRef.current;
 			if (timeSpent > 10000) {
-				console.log('Logging lesson exit');
+				logger.log('Logging lesson exit');
 				// Log lesson exit using interactionLogger
 				interactionLogger.logLessonExit(
 					'no_session', // We don't have sessionId in this context
@@ -58,7 +59,7 @@ export function useLessonTracking() {
 					undefined, // moduleId not available in this context
 					Math.floor(timeSpent / 1000)
 				).catch((error: unknown) => {
-					console.error('Failed to log lesson exit interaction:', error);
+					logger.error('Failed to log lesson exit interaction:', error);
 				});
 			}
 			lastLessonIdRef.current = null;
@@ -77,7 +78,7 @@ export function useLessonTracking() {
 						undefined, // moduleId not available in this context
 						Math.floor(timeSpent / 1000)
 					).catch((error: unknown) => {
-						console.error('Failed to log lesson exit interaction:', error);
+						logger.error('Failed to log lesson exit interaction:', error);
 					});
 				}
 			}

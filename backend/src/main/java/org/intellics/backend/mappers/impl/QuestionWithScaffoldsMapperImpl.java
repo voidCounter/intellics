@@ -7,15 +7,20 @@ import org.intellics.backend.domain.entities.MultipleChoiceQuestionEntity;
 import org.intellics.backend.domain.entities.QuestionEntity;
 import org.intellics.backend.domain.entities.WrittenQuestionEntity;
 import org.intellics.backend.mappers.QuestionWithScaffoldsMapper;
+import org.intellics.backend.mappers.ScaffoldMapper;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
+
+import java.util.stream.Collectors;
 
 @Component
 public class QuestionWithScaffoldsMapperImpl implements QuestionWithScaffoldsMapper {
     private final ModelMapper modelMapper;
+    private final ScaffoldMapper scaffoldMapper;
     
-    public QuestionWithScaffoldsMapperImpl(ModelMapper modelMapper) {
+    public QuestionWithScaffoldsMapperImpl(ModelMapper modelMapper, ScaffoldMapper scaffoldMapper) {
         this.modelMapper = modelMapper;
+        this.scaffoldMapper = scaffoldMapper;
     }
     
     @Override
@@ -31,12 +36,26 @@ public class QuestionWithScaffoldsMapperImpl implements QuestionWithScaffoldsMap
     
     @Override
     public QuestionWithScaffoldsDto mapTo(QuestionEntity questionEntity) {
+        QuestionWithScaffoldsDto questionDto;
+        
         if (questionEntity instanceof MultipleChoiceQuestionEntity) {
-            return modelMapper.map(questionEntity, MultipleChoiceQuestionWithScaffoldsDto.class);
+            questionDto = modelMapper.map(questionEntity, MultipleChoiceQuestionWithScaffoldsDto.class);
         } else if (questionEntity instanceof WrittenQuestionEntity) {
-            return modelMapper.map(questionEntity, WrittenQuestionWithScaffoldsDto.class);
+            questionDto = modelMapper.map(questionEntity, WrittenQuestionWithScaffoldsDto.class);
+        } else {
+            throw new IllegalArgumentException(
+                "Unknown Question entity type: " + questionEntity.getClass().getName());
         }
-        throw new IllegalArgumentException(
-            "Unknown Question entity type: " + questionEntity.getClass().getName());
+        
+        // Manually map scaffolds using our custom ScaffoldMapper to ensure correct field mapping
+        if (questionEntity.getScaffolds() != null) {
+            questionDto.setScaffolds(
+                questionEntity.getScaffolds().stream()
+                    .map(scaffoldMapper::mapTo)
+                    .collect(Collectors.toList())
+            );
+        }
+        
+        return questionDto;
     }
 }

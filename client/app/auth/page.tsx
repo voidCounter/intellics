@@ -6,6 +6,7 @@ import { Suspense, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { authApi } from "@/services/api";
 
+import { logger } from '@/lib/utils';
 function AuthComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -43,7 +44,7 @@ function AuthComponent() {
       // Set user state - the useEffect above will handle the redirect
       setUser(userData);
     } catch (error) {
-      console.error('❌ Error fetching user info:', error);
+      logger.error('❌ Error fetching user info:', error);
       localStorage.removeItem('authToken');
     }
   };

@@ -1,3 +1,5 @@
+import { logger } from '@/lib/utils';
+
 // API service functions - handles all backend communication
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1';
@@ -50,7 +52,7 @@ export const dataApi = {
         return apiResponse.data || [];
       }
     } catch (error) {
-      console.warn('Failed to fetch modules from API route, falling back to static data:', error);
+      logger.warn('Failed to fetch modules from API route, falling back to static data:', error);
     }
     
     // Fallback to static data
@@ -80,7 +82,7 @@ export const dataApi = {
         return apiResponse.data || [];
       }
     } catch (error) {
-      console.warn('Failed to fetch lessons from API route, falling back to static data:', error);
+      logger.warn('Failed to fetch lessons from API route, falling back to static data:', error);
     }
     
     // Fallback to static data
@@ -110,7 +112,7 @@ export const dataApi = {
         return apiResponse.data || [];
       }
     } catch (error) {
-      console.warn('Failed to fetch questions from API route, falling back to static data:', error);
+      logger.warn('Failed to fetch questions from API route, falling back to static data:', error);
     }
     
     // Fallback to static data
@@ -140,7 +142,7 @@ export const dataApi = {
         return apiResponse.data || [];
       }
     } catch (error) {
-      console.warn('Failed to fetch knowledge components from API route, falling back to static data:', error);
+      logger.warn('Failed to fetch knowledge components from API route, falling back to static data:', error);
     }
     
     // Fallback to static data (if available) or empty array
@@ -152,3 +154,54 @@ export const dataApi = {
     return response.json();
   },
 };
+
+export async function evaluateAnswerWithLLM(
+  questionText: string,
+  correctAnswer: string,
+  userAnswer: string,
+  questionContext?: string
+): Promise<{
+  correctnessScore: number;
+  isCorrect: boolean;
+  feedback: string;
+  detailedAnalysis: string;
+}> {
+  try {
+    // Get auth token from localStorage
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('No auth token available');
+    }
+
+    const response = await fetch('/api/llm/evaluate-answer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        questionText,
+        correctAnswer,
+        userAnswer,
+        questionContext,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    logger.error('Error evaluating answer with LLM:', error);
+    // Fallback to exact matching if LLM fails
+    const isCorrect = userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+    return {
+      correctnessScore: isCorrect ? 1.0 : 0.0,
+      isCorrect,
+      feedback: isCorrect ? 'Correct!' : 'Incorrect. Please try again.',
+      detailedAnalysis: 'LLM evaluation failed - using exact matching fallback',
+    };
+  }
+}

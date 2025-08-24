@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { BookOpen } from "lucide-react"
 import { KnowledgeComponentWithRelationships } from "@/types/api"
+import { logger } from '@/lib/utils';
 import { 
   BasicInformation,
   LinkedModulesWrapper,
@@ -36,7 +37,7 @@ export function KnowledgeComponentDrawer({ kc, trigger, onUpdate, isOpen: contro
 
   // Update local lessons and form fields when kc prop changes
   useEffect(() => {
-    console.log('Drawer received new KC data:', kc)
+    logger.log('Drawer received new KC data:', kc)
     setLocalLessons(kc.linkedLessons || [])
     setEditName(kc.kc_name)
     setEditDescription(kc.description || '')
@@ -101,12 +102,12 @@ export function KnowledgeComponentDrawer({ kc, trigger, onUpdate, isOpen: contro
         }
         
         // Show success message (you can add toast notification here)
-        console.log('KC updated successfully:', result.data)
+        logger.log('KC updated successfully:', result.data)
       } else {
         throw new Error(result.message || 'Failed to update KC')
       }
     } catch (error) {
-      console.error('Error saving KC:', error)
+      logger.error('Error saving KC:', error)
       setError(error instanceof Error ? error.message : 'An error occurred while saving')
     } finally {
       setIsSaving(false)
@@ -231,7 +232,7 @@ export function KnowledgeComponentDrawer({ kc, trigger, onUpdate, isOpen: contro
               kcId={kc.kc_id} 
               onModulesChange={(modules) => {
                 // Update local state if needed
-                console.log('Modules updated:', modules);
+                logger.log('Modules updated:', modules);
               }}
               navigateToItem={navigateToItem}
             />

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { logger } from '@/lib/utils';
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
@@ -286,7 +287,7 @@ export function useUpdateKCTargetMastery() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Target mastery update failed:', response.status, errorText);
+        logger.error('Target mastery update failed:', response.status, errorText);
         throw new Error(`Failed to update target mastery: ${response.status} ${errorText}`);
       }
 
@@ -332,7 +333,7 @@ export function useUpdateKCWeight() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Question weight update failed:', response.status, errorText);
+        logger.error('Question weight update failed:', response.status, errorText);
         throw new Error(`Failed to update weight: ${response.status} ${errorText}`);
       }
 
@@ -402,9 +403,9 @@ export function useAddKCToModule() {
       if (!token) throw new Error("No auth token");
 
       const requestBody = { kcId };
-      console.log('Sending request body:', requestBody);
-      console.log('kcId type:', typeof kcId, 'value:', kcId);
-      console.log('JSON stringified:', JSON.stringify(requestBody));
+      logger.log('Sending request body:', requestBody);
+      logger.log('kcId type:', typeof kcId, 'value:', kcId);
+      logger.log('JSON stringified:', JSON.stringify(requestBody));
 
       const response = await fetch(
         `${BACKEND_URL}/api/v1/modules/${moduleId}/kcs`, // Use the correct endpoint for linking existing KCs

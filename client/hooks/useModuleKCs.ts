@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
+import { logger } from '@/lib/utils';
 export interface ModuleKC {
   kc_id: string;
   kc_name: string;
@@ -87,7 +88,7 @@ export function useAddKCToModule(moduleId: string) {
       toast.success('Knowledge Component added to module successfully');
     },
     onError: (error: Error) => {
-      console.error('Error adding KC to module:', error);
+      logger.error('Error adding KC to module:', error);
       toast.error(error.message || 'Failed to add KC to module');
     },
   });
@@ -125,7 +126,7 @@ export function useRemoveKCFromModule(moduleId: string) {
       toast.success('Knowledge Component removed from module successfully');
     },
     onError: (error: Error) => {
-      console.error('Error removing KC from module:', error);
+      logger.error('Error removing KC from module:', error);
       toast.error(error.message || 'Failed to remove KC from module');
     },
   });
@@ -166,7 +167,7 @@ export function useUpdateKCPrerequisites(moduleId: string) {
       toast.success('KC prerequisites updated successfully');
     },
     onError: (error: Error) => {
-      console.error('Error updating KC prerequisites:', error);
+      logger.error('Error updating KC prerequisites:', error);
       toast.error(error.message || 'Failed to update KC prerequisites');
     },
   });
@@ -205,7 +206,7 @@ export function useReorderModuleKCs(moduleId: string) {
       toast.success('KC order updated successfully');
     },
     onError: (error: Error) => {
-      console.error('Error reordering KCs:', error);
+      logger.error('Error reordering KCs:', error);
       toast.error(error.message || 'Failed to reorder KCs');
     },
   });

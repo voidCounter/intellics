@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/utils';
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { moduleId: string; kcId: string } }
@@ -36,7 +37,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error removing KC from module:', error);
+    logger.error('Error removing KC from module:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

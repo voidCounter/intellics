@@ -28,5 +28,11 @@ export const useSessionStore = create<SessionState>((set) => ({
   setActive: () => set((state) => (state.sessionId ? { status: 'active' } : state)),
   setInitializing: () => set({ status: 'initializing' }),
   clearSession: () => set({ sessionId: null, status: 'ended', sessionDetails: null }),
-  updateSessionDetails: (details) => set({ sessionDetails: details }),
+  updateSessionDetails: (details) => set((state) => {
+    // Only update if the details are actually different to prevent unnecessary re-renders
+    if (JSON.stringify(state.sessionDetails) === JSON.stringify(details)) {
+      return state; // No change needed
+    }
+    return { sessionDetails: details };
+  }),
 }));

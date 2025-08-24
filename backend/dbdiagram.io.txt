@@ -143,6 +143,8 @@ Table user_interactions {
   is_correct boolean
   hint_level integer
   time_spent_seconds integer
+  answer_correctness decimal(3,2) [note: 'AI-evaluated correctness score 0.0-1.0']
+  answer_analysis text [note: 'Detailed AI feedback and analysis']
   timestamp timestamp(6)
 }
 

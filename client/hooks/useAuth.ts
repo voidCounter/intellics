@@ -3,6 +3,7 @@ import { useAuthStore, useMainStore } from '@/lib/stores';
 import { authApi } from '@/services/api';
 import { User } from '@/types/api';
 
+import { logger } from '@/lib/utils';
 export const useAuth = () => {
   const { user, isAuthenticated, isLoadingAuth, setUser, setAuthenticated, setLoadingAuth } = useAuthStore();
   const { logout: logoutAll } = useMainStore();
@@ -28,7 +29,7 @@ export const useAuth = () => {
       setAuthenticated(true);
       setLoadingAuth(false);
     } catch (error) {
-      console.error('Auth check error:', error);
+      logger.error('Auth check error:', error);
       localStorage.removeItem('authToken');
       setUser(null);
       setAuthenticated(false);
@@ -40,7 +41,7 @@ export const useAuth = () => {
     try {
       await logoutAll();
     } catch (error) {
-      console.error('Failed to logout:', error);
+      logger.error('Failed to logout:', error);
     }
   }, [logoutAll]);
 

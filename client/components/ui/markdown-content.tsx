@@ -6,15 +6,19 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import atomOneLight from 'react-syntax-highlighter/dist/styles/atom-one-light';
 import { useEffect, useRef, useState, useMemo } from 'react';
 import mermaid from 'mermaid';
+import { logger } from '@/lib/utils';
 
 // Initialize Mermaid with performance optimizations
 mermaid.initialize({
-  startOnLoad: false, // Don't auto-start rendering
+  startOnLoad: false,
   theme: 'default',
   securityLevel: 'loose',
-  fontFamily: 'inherit', // Use system fonts for better performance
-  logLevel: 1, // Reduce logging in production
-  maxTextSize: 50000, // Limit text size for performance
+  fontFamily: 'inherit',
+  themeVariables: {
+    fontSize: '14px',
+    fontFamily: 'var(--font-dm-sans)',
+    wrap: true
+  }
 });
 
 // Simple Mermaid Diagram Component
@@ -27,7 +31,7 @@ function MermaidDiagram({ chart, index }: { chart: string; index: number }) {
   // Render diagram immediately
   useEffect(() => {
     if (elementRef.current && chart !== renderedChartRef.current) {
-      console.log(`Rendering Mermaid diagram ${index}:`, chart.substring(0, 100) + '...');
+      logger.info(`Rendering Mermaid diagram ${index}:`, chart.substring(0, 100) + '...');
       elementRef.current.innerHTML = '';
       setError(null);
       setIsRendering(true);
@@ -36,7 +40,7 @@ function MermaidDiagram({ chart, index }: { chart: string; index: number }) {
       
       mermaid.render(uniqueId, chart)
         .then(({ svg }) => {
-          console.log(`Mermaid diagram ${index} rendered successfully`);
+          logger.info(`Mermaid diagram ${index} rendered successfully`);
           if (elementRef.current) {
             elementRef.current.innerHTML = svg;
             renderedChartRef.current = chart;
@@ -44,7 +48,7 @@ function MermaidDiagram({ chart, index }: { chart: string; index: number }) {
           setIsRendering(false);
         })
         .catch((err) => {
-          console.error(`Mermaid rendering error for diagram ${index}:`, err);
+          logger.error(`Mermaid rendering error for diagram ${index}:`, err);
           setError(`Failed to render diagram: ${err.message}`);
           setIsRendering(false);
         });

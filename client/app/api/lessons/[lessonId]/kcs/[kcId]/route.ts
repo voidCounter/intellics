@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/utils';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 
 export async function PATCH(
@@ -46,7 +47,7 @@ export async function PATCH(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error updating lesson-KC mapping:', error);
+    logger.error('Error updating lesson-KC mapping:', error);
     return NextResponse.json(
       { error: 'Failed to update lesson-KC mapping' },
       { status: 500 }
@@ -85,7 +86,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting lesson-KC mapping:', error);
+    logger.error('Error deleting lesson-KC mapping:', error);
     return NextResponse.json(
       { error: 'Failed to delete lesson-KC mapping' },
       { status: 500 }

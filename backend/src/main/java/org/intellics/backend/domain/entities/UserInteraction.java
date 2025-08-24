@@ -11,6 +11,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -63,6 +65,11 @@ public class UserInteraction {
     private boolean is_correct;
     private int hint_level;
     private int time_spent_seconds;
+    
+    // AI evaluation results
+    private BigDecimal answer_correctness; // 0.0 to 1.0 score from AI
+    private String answer_analysis; // Detailed AI feedback and analysis
+    
     @CreatedDate
     private Instant timestamp;
 }

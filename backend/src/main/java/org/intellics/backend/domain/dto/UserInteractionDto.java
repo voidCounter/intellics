@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.intellics.backend.domain.entities.InteractionType;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +29,10 @@ public class UserInteractionDto {
     private Integer hintLevel;
     private Integer timeSpentSeconds;
     private Instant timestamp;
+    
+    // AI evaluation results
+    private BigDecimal answerCorrectness; // AI-evaluated correctness score (0.0 to 1.0)
+    private String answerAnalysis; // Detailed AI feedback and analysis
     
     // Include KC mappings for comprehensive view
     private List<InteractionKCMappingDto> kcMappings;

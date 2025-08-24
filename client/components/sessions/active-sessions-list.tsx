@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Monitor, Smartphone, Tablet, Clock, User } from 'lucide-react';
 
+import { logger } from '@/lib/utils';
 interface ActiveSessionsListProps {
   title?: string;
   showRefreshButton?: boolean;
@@ -22,13 +23,13 @@ const formatDate = (dateString: string | null | undefined): string => {
     
     // Check if the date is valid
     if (isNaN(date.getTime())) {
-      console.warn('Invalid date string:', dateString);
+      logger.warn('Invalid date string:', dateString);
       return 'Invalid Date';
     }
     
     return date.toLocaleString();
   } catch (error) {
-    console.error('Error parsing date:', dateString, error);
+    logger.error('Error parsing date:', dateString, error);
     return 'Invalid Date';
   }
 };

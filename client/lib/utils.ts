@@ -15,3 +15,6 @@ export function formatTimestamp(timestamp: string): string {
     month: 'short'
   });
 }
+
+// Re-export logger for easy access
+export { logger } from './utils/logger';

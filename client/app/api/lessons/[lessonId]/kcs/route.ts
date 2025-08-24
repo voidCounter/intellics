@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/utils';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 
 export async function GET(
@@ -33,7 +34,7 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching lesson-KC mappings:', error);
+    logger.error('Error fetching lesson-KC mappings:', error);
     return NextResponse.json(
       { error: 'Failed to fetch lesson-KC mappings' },
       { status: 500 }
@@ -88,7 +89,7 @@ export async function POST(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error creating lesson-KC mapping:', error);
+    logger.error('Error creating lesson-KC mapping:', error);
     return NextResponse.json(
       { error: 'Failed to create lesson-KC mapping' },
       { status: 500 }

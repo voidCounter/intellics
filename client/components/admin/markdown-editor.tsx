@@ -38,6 +38,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 
+import { logger } from '@/lib/utils';
 interface MarkdownEditorProps {
   value: string
   onChange: (value: string) => void
@@ -209,7 +210,7 @@ export default function MarkdownEditor({ value, onChange, placeholder = "Start w
           editor.chain().focus().setImage({ src: url }).run()
           
         } catch (error) {
-          console.error('Upload error:', error)
+          logger.error('Upload error:', error)
           // Remove loading text and show error
           const currentPos = editor.state.selection.from
           editor.chain().focus().deleteRange({ from: currentPos - 20, to: currentPos }).run()

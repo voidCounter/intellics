@@ -101,11 +101,24 @@ public class UserInteractionServiceImpl implements UserInteractionService {
                 break;
                 
             case QUESTION_PRESENTED:
+                // 2-second deduplication for question presented to prevent spam
+                interactionKey = String.format("%s_%s_%s_%s_%s_%s_%s_%s",
+                    request.getInteractionType(),
+                    request.getSessionId(),
+                    request.getLessonId() != null ? request.getLessonId() : "null",
+                    request.getModuleId() != null ? request.getModuleId() : "null",
+                    request.getQuestionId() != null ? request.getQuestionId() : "null",
+                    request.getScaffoldId() != null ? request.getScaffoldId() : "null",
+                    request.getHintLevel() != null ? request.getHintLevel() : "null",
+                    System.currentTimeMillis() / 2000 // 2-second deduplication window
+                );
+                break;
+                
             case QUESTION_ATTEMPTED:
             case QUESTION_SKIPPED:
             case SCAFFOLD_ATTEMPTED:
             case SCAFFOLD_ANSWER:
-                // Log every presentation, attempt, skip, and scaffold interaction
+                // Log every attempt, skip, and scaffold interaction
                 // These are critical for mastery modeling and learning analytics
                 // Add timestamp for all these interactions to allow multiple occurrences
                 interactionKey = String.format("%s_%s_%s_%s_%s_%s_%s_%d",
@@ -211,6 +224,8 @@ public class UserInteractionServiceImpl implements UserInteractionService {
             .is_correct(request.getIsCorrect() != null ? request.getIsCorrect() : false)
             .hint_level(request.getHintLevel() != null ? request.getHintLevel() : 0)
             .time_spent_seconds(request.getTimeSpentSeconds() != null ? request.getTimeSpentSeconds() : 0)
+            .answer_correctness(request.getAnswerCorrectness())
+            .answer_analysis(request.getAnswerAnalysis())
             .build();
         
         log.debug("Built UserInteraction entity, about to save...");
@@ -328,6 +343,8 @@ public class UserInteractionServiceImpl implements UserInteractionService {
             .isCorrect(interaction.is_correct())
             .hintLevel(interaction.getHint_level())
             .timeSpentSeconds(interaction.getTime_spent_seconds())
+            .answerCorrectness(interaction.getAnswer_correctness())
+            .answerAnalysis(interaction.getAnswer_analysis())
             .timestamp(interaction.getTimestamp())
             .kcMappings(kcMappings)
             .build();

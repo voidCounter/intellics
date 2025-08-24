@@ -21,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Module } from '@/types/api';
 
+import { logger } from '@/lib/utils';
 const createModuleSchema = z.object({
   module_name: z.string().min(1, 'Module name is required').max(255, 'Module name cannot exceed 255 characters'),
   description: z.string().max(1000, 'Description cannot exceed 1000 characters').optional(),
@@ -138,7 +139,7 @@ export function CreateModuleDialog({
         }
       }
     } catch (error) {
-      console.error(`Error ${mode === 'edit' ? 'updating' : 'creating'} module:`, error);
+      logger.error(`Error ${mode === 'edit' ? 'updating' : 'creating'} module:`, error);
       toast.error(error instanceof Error ? error.message : `Failed to ${mode === 'edit' ? 'update' : 'create'} module`);
     } finally {
       setIsSubmitting(false);

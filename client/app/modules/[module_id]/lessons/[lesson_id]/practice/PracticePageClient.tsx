@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, TestTube, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Play, Brain, CheckCircle } from 'lucide-react';
 import { useLessonData } from '@/hooks/useLessonData';
 
 import { QuestionCard } from '@/components/quiz/question-card';
@@ -16,6 +16,7 @@ import { ProtectedRoute } from '@/components/auth/protected-route';
 import { useSessionStore } from '@/lib/stores';
 import { useNextQuestionWithScaffolds, useGetNextQuestion } from '@/hooks/useQuestionRecommendations';
 import { useInteractionLogger } from '@/lib/services/interactionLogger';
+import { logger } from '@/lib/utils';
 
 interface QuizResult {
   questionId: string;
@@ -26,6 +27,21 @@ interface QuizResult {
   hintsUsed: number;
   scaffoldUsed: boolean;
 }
+
+// Utility function to clean up question state from sessionStorage
+const cleanupQuestionStates = () => {
+  const keysToRemove = [];
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i);
+    if (key && key.startsWith('question_') && key.includes('_state')) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(key => {
+    logger.log('🧹 Cleaning up sessionStorage key:', key);
+    sessionStorage.removeItem(key);
+  });
+};
 
 export default function PracticePageClient() {
   const params = useParams();
@@ -49,14 +65,20 @@ export default function PracticePageClient() {
   const { data: currentQuestion, isLoading: questionLoading } = useNextQuestionWithScaffolds(
     params.lesson_id as string,
     params.module_id as string,
-    { enabled: showQuiz }
+    { 
+      enabled: showQuiz,
+      staleTime: 10 * 60 * 1000, // 10 minutes - prevent refetching when switching tabs
+      refetchOnWindowFocus: false, // Never refetch when switching tabs
+      refetchOnMount: false, // Don't refetch when component mounts
+      refetchOnReconnect: false // Don't refetch when reconnecting
+    }
   );
 
   // Mutation for getting the next question
   const getNextQuestion = useGetNextQuestion();
 
   useEffect(() => {
-    console.log('PracticePageClient mounted');
+    logger.log('PracticePageClient mounted');
     // No need to load all lessons - we already have the lesson ID from params
   }, []);
 
@@ -71,10 +93,13 @@ export default function PracticePageClient() {
   // Reset tracking when lesson changes
   useEffect(() => {
     if (params.lesson_id) {
-      console.log('🔄 Resetting interaction tracking for lesson:', params.lesson_id);
+      logger.log('🔄 Resetting interaction tracking for lesson:', params.lesson_id);
       startTestSentRef.current = false; // Reset the practice start flag when lesson changes
       setUsedHints(new Set());
       setUsedScaffolds(new Set());
+      
+      // Clean up sessionStorage for previous questions when lesson changes
+      cleanupQuestionStates();
     }
   }, [params.lesson_id]);
 
@@ -83,30 +108,37 @@ export default function PracticePageClient() {
     return () => {
       if (practiceStartTimeRef.current && currentLesson && sessionId) {
         const timeSpent = Math.floor((Date.now() - practiceStartTimeRef.current) / 1000);
-        if (timeSpent > 10) { // Only log if spent more than 10 seconds
-          console.log('Practice session ended, time spent:', timeSpent, 'seconds');
+        if (timeSpent > 10) { 
+          logger.log('Practice session ended, time spent:', timeSpent, 'seconds');
         }
       }
+      
+      // Clean up sessionStorage when practice session ends
+      cleanupQuestionStates();
     };
   }, [currentLesson, params.module_id, sessionId]);
 
   // Log question presented when currentQuestion changes
   useEffect(() => {
     if (currentQuestion && sessionId) {
-      console.log('📝 Question presented:', currentQuestion.question_id);
+      logger.log('📝 Question presented:', currentQuestion.question_id, 'at:', new Date().toISOString());
+      logger.log('📝 Question object reference:', currentQuestion);
       interactionLogger.logQuestionPresented(
         sessionId,
         currentQuestion.question_id,
         params.lesson_id as string,
         params.module_id as string
       ).catch((error: unknown) => {
-        console.error('Failed to log question presented interaction:', error);
+        logger.error('Failed to log question presented interaction:', error);
       });
     }
   }, [currentQuestion, sessionId, params.lesson_id, params.module_id, interactionLogger]);
 
   const handleStartQuiz = () => {
-    console.log('🎯 handleStartQuiz called, startTestSentRef.current:', startTestSentRef.current);
+    logger.log('🎯 handleStartQuiz called, startTestSentRef.current:', startTestSentRef.current);
+    
+    // Clean up any existing question states when starting a new quiz
+    cleanupQuestionStates();
     
     setShowQuiz(true);
     setCurrentQuestionIndex(0);
@@ -117,24 +149,14 @@ export default function PracticePageClient() {
     
     // Track practice start when user actually starts the quiz (only once per session)
     if (currentLesson && sessionId && !startTestSentRef.current) {
-      console.log('📤 Practice session started');
+      logger.log('📤 Practice session started');
       practiceStartTimeRef.current = Date.now();
       startTestSentRef.current = true;
       
-      // Log the first question presented when quiz starts
-      if (currentQuestion && sessionId) {
-        console.log('📝 First question presented on quiz start:', currentQuestion.question_id);
-        interactionLogger.logQuestionPresented(
-          sessionId,
-          currentQuestion.question_id,
-          params.lesson_id as string,
-          params.module_id as string
-        ).catch((error: unknown) => {
-          console.error('Failed to log first question presented interaction:', error);
-        });
-      }
+      // Note: Question presented is already logged by useEffect when currentQuestion changes
+      // No need to log it again here to avoid duplicates
     } else {
-      console.log('⏭️ Skipping practice start tracking:', {
+      logger.log('⏭️ Skipping practice start tracking:', {
         hasCurrentLesson: !!currentLesson,
         hasSessionId: !!sessionId,
         startTestSent: startTestSentRef.current
@@ -158,7 +180,7 @@ export default function PracticePageClient() {
         params.lesson_id as string,
         params.module_id as string
       ).catch((error: unknown) => {
-        console.error('Failed to log hint interaction:', error);
+        logger.error('Failed to log hint interaction:', error);
       });
     }
   };
@@ -188,7 +210,7 @@ export default function PracticePageClient() {
         params.lesson_id as string,
         params.module_id as string
       ).catch((error: unknown) => {
-        console.error('Failed to log scaffold usage interaction:', error);
+        logger.error('Failed to log scaffold usage interaction:', error);
       });
     }
   };
@@ -207,7 +229,7 @@ export default function PracticePageClient() {
         params.lesson_id as string,
         params.module_id as string
       ).catch((error: unknown) => {
-        console.error('Failed to log scaffold attempted interaction:', error);
+        logger.error('Failed to log scaffold attempted interaction:', error);
       });
     }
   };
@@ -223,17 +245,55 @@ export default function PracticePageClient() {
         params.lesson_id as string,
         params.module_id as string
       ).catch((error: unknown) => {
-        console.error('Failed to log skip interaction:', error);
+        logger.error('Failed to log skip interaction:', error);
       });
     }
   };
 
-  const handleQuestionSubmit = async (answer: string, isCorrect: boolean) => {
+  const handleContinue = async () => {
+    try {
+      const nextQuestion = await getNextQuestion.mutateAsync({
+        lessonId: params.lesson_id as string,
+        moduleId: params.module_id as string
+      });
+
+      if (nextQuestion) {
+        // Clean up previous question's state when moving to next question
+        cleanupQuestionStates();
+        
+        // Move to next question
+        setCurrentQuestionIndex(prev => prev + 1);
+        
+        // Log the next question presented
+        if (sessionId) {
+          logger.log('📝 Next question presented (continue):', nextQuestion.question_id);
+          interactionLogger.logQuestionPresented(
+            sessionId,
+            nextQuestion.question_id,
+            params.lesson_id as string,
+            params.module_id as string
+          ).catch((error: unknown) => {
+            logger.error('Failed to log next question presented interaction:', error);
+          });
+        }
+      } else {
+        // No more questions, show results
+        setShowResults(true);
+        setShowQuiz(false);
+      }
+    } catch (error) {
+      logger.error('Failed to get next question:', error);
+      // Show results anyway
+      setShowResults(true);
+      setShowQuiz(false);
+    }
+  };
+
+  const handleQuestionSubmit = async (answer: string, isCorrect: boolean, aiEvaluation?: { correctnessScore: number; feedback: string; analysis: string }) => {
     if (!currentQuestion) return;
 
     // Check if this is a skip (empty answer and not correct)
     const isSkipped = answer === '' && !isCorrect;
-
     // Log question attempted interaction
     if (!isSkipped && sessionId) {
       interactionLogger.logQuestionAttempted(
@@ -242,9 +302,12 @@ export default function PracticePageClient() {
         answer,
         isCorrect,
         params.lesson_id as string,
-        params.module_id as string
+        params.module_id as string,
+        undefined, // timeSpentSeconds
+        aiEvaluation?.correctnessScore,
+        aiEvaluation?.analysis
       ).catch((error: unknown) => {
-        console.error('Failed to log question attempted interaction:', error);
+        logger.error('Failed to log question attempted interaction:', error);
       });
     }
 
@@ -276,44 +339,52 @@ export default function PracticePageClient() {
     const newResults = [...quizResults, result];
     setQuizResults(newResults);
 
-    // Get the next question
-    try {
-      const nextQuestion = await getNextQuestion.mutateAsync({
-        lessonId: params.lesson_id as string,
-        moduleId: params.module_id as string
-      });
+    // Only get next question for skips - for regular submissions, wait for user to click Continue
+    if (isSkipped) {
+      try {
+        const nextQuestion = await getNextQuestion.mutateAsync({
+          lessonId: params.lesson_id as string,
+          moduleId: params.module_id as string
+        });
 
-      if (nextQuestion) {
-        // Move to next question
-        setCurrentQuestionIndex(prev => prev + 1);
-        // The useNextQuestionWithScaffolds hook will automatically update with the new question
-        
-        // Log the next question presented
-        if (sessionId) {
-          console.log('📝 Next question presented:', nextQuestion.question_id);
-          interactionLogger.logQuestionPresented(
-            sessionId,
-            nextQuestion.question_id,
-            params.lesson_id as string,
-            params.module_id as string
-          ).catch((error: unknown) => {
-            console.error('Failed to log next question presented interaction:', error);
-          });
+        if (nextQuestion) {
+          // Clean up previous question's state when moving to next question
+          cleanupQuestionStates();
+          
+          // Move to next question
+          setCurrentQuestionIndex(prev => prev + 1);
+          
+          // Log the next question presented
+          if (sessionId) {
+            logger.log('📝 Next question presented (skip):', nextQuestion.question_id);
+            interactionLogger.logQuestionPresented(
+              sessionId,
+              nextQuestion.question_id,
+              params.lesson_id as string,
+              params.module_id as string
+            ).catch((error: unknown) => {
+              logger.error('Failed to log next question presented interaction:', error);
+            });
+          }
+        } else {
+          // No more questions, show results
+          setShowResults(true);
+          setShowQuiz(false);
         }
-      } else {
-        // No more questions, show results
+      } catch (error) {
+        logger.error('Failed to get next question:', error);
+        // Show results anyway
         setShowResults(true);
         setShowQuiz(false);
       }
-    } catch (error) {
-      console.error('Failed to get next question:', error);
-      // Show results anyway
-      setShowResults(true);
-      setShowQuiz(false);
     }
+    // For regular submissions (not skips), the user will click Continue to move to next question
   };
 
   const handleBackToLesson = () => {
+    // Clean up sessionStorage when going back to lesson
+    cleanupQuestionStates();
+    
     router.push(`/modules/${params.module_id}/lessons/${params.lesson_id}`);
   };
 
@@ -414,6 +485,9 @@ export default function PracticePageClient() {
           <QuizResults 
             results={quizResults} 
             onRetake={() => {
+              // Clean up sessionStorage when retaking quiz
+              cleanupQuestionStates();
+              
               setShowResults(false);
               setQuizResults([]);
               setCurrentQuestionIndex(0);
@@ -436,12 +510,9 @@ export default function PracticePageClient() {
               Back to Lesson
             </Button>
           </div>
-          <div className="mb-4">
-            <Badge variant="outline">
-              Question {currentQuestionIndex + 1}
-            </Badge>
-          </div>
+
           <QuestionCard
+            key={`question-${currentQuestion?.question_id}-${currentQuestionIndex}`}
             question={currentQuestion}
             onSubmit={handleQuestionSubmit}
             onHint={handleHint}
@@ -449,10 +520,28 @@ export default function PracticePageClient() {
             onScaffoldUsage={handleScaffoldUsage}
             onScaffoldSubmit={handleScaffoldSubmit}
             onSkip={handleSkip}
+            onContinue={handleContinue}
             usedHints={usedHints}
             questionNumber={currentQuestionIndex + 1}
             totalQuestions={-1} // We don't know total count in this approach
           />
+          
+          {/* Finish Practice Button */}
+          <div className="flex justify-center mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Clean up sessionStorage when finishing practice
+                cleanupQuestionStates();
+                
+                setShowResults(true);
+                setShowQuiz(false);
+              }}
+              className="px-8 py-3"
+            >
+              Finish Practice
+            </Button>
+          </div>
         </div>
       </ProtectedRoute>
     );
@@ -471,7 +560,7 @@ export default function PracticePageClient() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <div className="bg-blue-600 p-4 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
-              <TestTube className="h-10 w-10 text-white" />
+              <Brain className="h-10 w-10 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
               Practice Questions
@@ -503,7 +592,7 @@ export default function PracticePageClient() {
               size="lg" 
               className="px-8 py-3 text-lg"
             >
-              <TestTube className="h-5 w-5 mr-2" />
+              <Play className="h-5 w-5 mr-2" />
               Start Practice
             </Button>
           </div>

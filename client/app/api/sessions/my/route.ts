@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/utils';
 export async function GET(request: NextRequest) {
   try {
     // Get the auth token from the request headers
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(responseData, { status: backendResponse.status });
 
   } catch (error) {
-    console.error('Get my sessions error:', error);
+    logger.error('Get my sessions error:', error);
     return NextResponse.json(
       { error: 'Failed to get sessions' },
       { status: 500 }

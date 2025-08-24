@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/utils';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 
 export async function GET(
@@ -33,7 +34,7 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching module KCs:', error);
+    logger.error('Error fetching module KCs:', error);
     return NextResponse.json(
       { error: 'Failed to fetch module KCs' },
       { status: 500 }
@@ -77,7 +78,7 @@ export async function POST(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error creating module KC:', error);
+    logger.error('Error creating module KC:', error);
     return NextResponse.json(
       { error: 'Failed to create module KC' },
       { status: 500 }

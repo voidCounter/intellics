@@ -46,19 +46,36 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
             .build();
 
     @Override
-    public QuestionDto getNextQuestion(UUID userId, UUID lessonId, UUID moduleId, Boolean includePrerequisites) {
-        log.debug("Getting next question for user {} (lesson: {}, module: {})", userId, lessonId, moduleId);
+    public QuestionDto getNextQuestion(UUID userId, UUID lessonId, UUID moduleId, Boolean includePrerequisites, String scope) {
+        log.debug("Getting next question for user {} (lesson: {}, module: {}, scope: {})", userId, lessonId, moduleId, scope);
         
         // Determine context and parameters
         String context = lessonId != null ? "lesson" : "global";
         Boolean includePrereqs = includePrerequisites != null ? includePrerequisites : (context.equals("global"));
         
-        String sql = """
-            SELECT * FROM recommend_questions(
-                ?, ?, ?, ?, ?, ?, ?, ?
-            )
-            LIMIT 1
-            """;
+        // For module practice with "all" scope, we want to include all KCs regardless of mastery
+        if (moduleId != null && "all".equals(scope)) {
+            includePrereqs = true; // Always include prerequisites for comprehensive practice
+        }
+        
+       String sql = """
+    SELECT * FROM recommend_questions(
+        ?::uuid,
+        ?::text,
+        ?::uuid,
+        ?::uuid,
+        ?::int,
+        ?::boolean,
+        ?::int,
+        ?::int,
+        ?::int
+    )
+    LIMIT 1
+"""; 
+
+        
+        log.debug("About to call recommend_questions function with params: userId={}, context={}, lessonId={}, moduleId={}, limit=1, includePrereqs={}, maxRecencyDays=30, skipRecencyDays=3, perKcLimit=1", 
+            userId, context, lessonId, moduleId, includePrereqs);
         
         try {
             List<QuestionRecommendationDto> recommendations = jdbcTemplate.query(
@@ -71,17 +88,21 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
                 1, // Get only 1 question
                 includePrereqs,
                 30, // Default max recency days
+                3, // Default skip recency days
                 1   // Default per KC limit
             );
             
+            log.debug("Recommendation function returned {} recommendations for user {} in context {} (lessonId={}, moduleId={})", 
+                recommendations.size(), userId, context, lessonId, moduleId);
+            
             if (recommendations.isEmpty()) {
-                log.debug("No more questions available for user {}", userId);
+                log.debug("No more questions available for user {} in context {}", userId, context);
                 return null;
             }
             
             QuestionRecommendationDto recommendation = recommendations.get(0);
-            log.debug("Found recommendation for question {} with priority {}", 
-                recommendation.getQuestionId(), recommendation.getPriorityScore());
+            log.debug("Found recommendation for question {} with priority {} in context {}", 
+                recommendation.getQuestionId(), recommendation.getPriorityScore(), context);
             
             // Fetch the full question data
             QuestionEntity questionEntity = questionService.getQuestion(recommendation.getQuestionId());
@@ -106,19 +127,35 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
     }
 
     @Override
-    public QuestionWithScaffoldsDto getNextQuestionWithScaffolds(UUID userId, UUID lessonId, UUID moduleId, Boolean includePrerequisites) {
-        log.debug("Getting next question with scaffolds for user {} (lesson: {}, module: {})", userId, lessonId, moduleId);
+    public QuestionWithScaffoldsDto getNextQuestionWithScaffolds(UUID userId, UUID lessonId, UUID moduleId, Boolean includePrerequisites, String scope) {
+        log.debug("Getting next question with scaffolds for user {} (lesson: {}, module: {}, scope: {})", userId, lessonId, moduleId, scope);
         
         // Determine context and parameters
         String context = lessonId != null ? "lesson" : "global";
         Boolean includePrereqs = includePrerequisites != null ? includePrerequisites : (context.equals("global"));
         
-        String sql = """
-            SELECT * FROM recommend_questions(
-                ?, ?, ?, ?, ?, ?, ?, ?
-            )
-            LIMIT 1
-            """;
+        // For module practice with "all" scope, we want to include all KCs regardless of mastery
+        if (moduleId != null && "all".equals(scope)) {
+            includePrereqs = true; // Always include prerequisites for comprehensive practice
+        }
+        
+       String sql = """
+    SELECT * FROM recommend_questions(
+        ?::uuid,
+        ?::text,
+        ?::uuid,
+        ?::uuid,
+        ?::int,
+        ?::boolean,
+        ?::int,
+        ?::int,
+        ?::int
+    )
+    LIMIT 1
+"""; 
+        
+        log.debug("About to call recommend_questions function with params: userId={}, context={}, lessonId={}, moduleId={}, limit=1, includePrereqs={}, maxRecencyDays=30, skipRecencyDays=3, perKcLimit=1", 
+            userId, context, lessonId, moduleId, includePrereqs);
         
         try {
             List<QuestionRecommendationDto> recommendations = jdbcTemplate.query(
@@ -131,17 +168,21 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
                 1, // Get only 1 question
                 includePrereqs,
                 30, // Default max recency days
+                3, // Default skip recency days
                 1   // Default per KC limit
             );
             
+            log.debug("Recommendation function returned {} recommendations for user {} in context {} (lessonId={}, moduleId={})", 
+                recommendations.size(), userId, context, lessonId, moduleId);
+            
             if (recommendations.isEmpty()) {
-                log.debug("No more questions available for user {}", userId);
+                log.debug("No more questions available for user {} in context {}", userId, context);
                 return null;
             }
             
             QuestionRecommendationDto recommendation = recommendations.get(0);
-            log.debug("Found recommendation for question {} with priority {}", 
-                recommendation.getQuestionId(), recommendation.getPriorityScore());
+            log.debug("Found recommendation for question {} with priority {} in context {}", 
+                recommendation.getQuestionId(), recommendation.getPriorityScore(), context);
             
             // Fetch the full question data with scaffolds
             QuestionEntity questionEntity = questionService.getQuestion(recommendation.getQuestionId());
@@ -166,13 +207,18 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
     }
 
     @Override
-    public List<QuestionRecommendationDto> getPracticeSession(UUID userId, UUID lessonId, UUID moduleId, int count, Boolean includePrerequisites) {
-        log.debug("Getting practice session for user {} (lesson: {}, module: {}, count: {})", 
-            userId, lessonId, moduleId, count);
+    public List<QuestionRecommendationDto> getPracticeSession(UUID userId, UUID lessonId, UUID moduleId, int count, Boolean includePrerequisites, String scope) {
+        log.debug("Getting practice session for user {} (lesson: {}, module: {}, count: {}, scope: {})", 
+            userId, lessonId, moduleId, count, scope);
         
         // Determine context and parameters
         String context = lessonId != null ? "lesson" : "global";
         Boolean includePrereqs = includePrerequisites != null ? includePrerequisites : (context.equals("global"));
+        
+        // For module practice with "all" scope, we want to include all KCs regardless of mastery
+        if (moduleId != null && "all".equals(scope)) {
+            includePrereqs = true; // Always include prerequisites for comprehensive practice
+        }
         
         String sql = """
             SELECT * FROM recommend_questions(

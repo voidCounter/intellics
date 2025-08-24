@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { InteractiveProgressBar, ValueDisplay, LevelBadge, getLevelColor, getLevelLabel } from "./progress-slider"
 
+import { logger } from '@/lib/utils';
 // Generic interfaces
 interface BaseLinkedItem {
   id: string
@@ -156,7 +157,7 @@ export function LinkedItems<T>({
       // Remove from new items after successful save
       setNewItems(prev => prev.filter((_, i) => i !== index))
     } catch (error) {
-      console.error(`Failed to add ${type}:`, error)
+      logger.error(`Failed to add ${type}:`, error)
     }
   }
 
@@ -165,7 +166,7 @@ export function LinkedItems<T>({
       await onRemove(itemId)
       setItemToDelete(null)
     } catch (error) {
-      console.error(`Failed to remove ${type}:`, error)
+      logger.error(`Failed to remove ${type}:`, error)
     }
   }
 

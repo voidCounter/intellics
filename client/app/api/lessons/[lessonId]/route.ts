@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { logger } from '@/lib/utils';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
 
 export async function GET(
@@ -35,7 +36,7 @@ export async function GET(
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error fetching lesson:', error)
+    logger.error('Error fetching lesson:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
@@ -79,7 +80,7 @@ export async function PUT(
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error updating lesson:', error)
+    logger.error('Error updating lesson:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

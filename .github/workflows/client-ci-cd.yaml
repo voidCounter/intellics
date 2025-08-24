@@ -1,4 +1,5 @@
 name: client-ci-cd
+
 on:
   push:
     branches:
@@ -14,100 +15,33 @@ on:
       - 'client/**'
 
 jobs:
-  # web-lint:
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: client
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '18'
-  #     - name: Install dependencies
-  #       run: npm install
-  #     - name: Run ESLint
-  #       run: npm run lint
-  #     - name: Check for ESLint errors
-  #       if: ${{ failure() }}
-  #       run: echo "ESLint failed!" && exit 1
-
-  test-and-build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: client
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
-      # - name: Run Unit Tests
-      #   run: npm test -- --passWithNoTests
-      # - name: Check for test errors
-      #   if: ${{ failure() }}
-      #   run: echo "Tests failed!" && exit 1
-      - name: Build the application
-        run: npm run build
-      - name: Verify Build Output
-        run: ls -l .next || { echo "Build output (.next) not found!"; exit 1; }
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-build
-          include-hidden-files: 'true'
-          path: ${{ github.workspace }}/client/.next
-          if-no-files-found: error
-
   deploy-to-vercel:
+    runs-on: ubuntu-latest
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_CLIENT_PROJECT_ID }}
-    needs: test-and-build
-    runs-on: ubuntu-latest
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
       - name: Install Vercel CLI
         run: npm install -g vercel@latest --legacy-peer-deps
-      - uses: actions/download-artifact@v4
-        with:
-          name: web-build
-          path: ${{ github.workspace }}/client/.next
-      - name: set Vercel environment
+      - name: Set Vercel Environment
         id: vercel-env
         run: |
-          if [ "${{github.ref}}" = "refs/heads/main" ]; then
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "env=production" >> $GITHUB_OUTPUT
           else
             echo "env=preview" >> $GITHUB_OUTPUT
           fi
-      - name: Pull vercel environment information 
+      - name: Deploy to Vercel
         run: |
           cd client
-          vercel pull --yes --environment=${{ steps.vercel-env.outputs.env }} --token=${{ secrets.VERCEL_TOKEN }}
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            vercel deploy --prod --token $VERCEL_TOKEN
+          else
+            vercel deploy --token $VERCEL_TOKEN
+          fi
 
-      - name: Deploy to vercel (production)
-        if: github.ref == 'refs/heads/main'
-        run: |
-          cd client
-          vercel deploy --prod --token ${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy to vercel (preview)
-        if: github.ref != 'refs/heads/main'
-        run: |
-          cd client
-          vercel deploy --token ${{ secrets.VERCEL_TOKEN }}

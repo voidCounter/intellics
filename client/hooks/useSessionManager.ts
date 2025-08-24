@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { useSessionStore } from '@/lib/stores/session-store';
 import { useAuthStore } from '@/lib/stores/auth-store';
+import { useSessionStore } from '@/lib/stores/session-store';
+import { logger } from '@/lib/utils';
 import { detectDeviceInfoFromUserAgent } from '@/lib/utils/server-device-detection';
 import { Session } from '@/types/api';
 
@@ -9,6 +10,7 @@ export const useSessionManager = () => {
   const { sessionId, status, setSession, setInactive, setActive, clearSession, updateSessionDetails } = useSessionStore();
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isCreatingSessionRef = useRef(false); // Track if we're currently creating a session
+  const lastHeartbeatRef = useRef<number>(0); // Track last heartbeat time
   const HEARTBEAT_INTERVAL = 15 * 1000; // 15 seconds
 
   // Helper function to update session details from API response
@@ -44,7 +46,7 @@ export const useSessionManager = () => {
         const token = localStorage.getItem('authToken');
         if (!token) return;
 
-        console.log('Creating new session...');
+        logger.info('Creating new session...');
         
         const response = await fetch('/api/sessions', {
           method: 'POST',
@@ -60,7 +62,7 @@ export const useSessionManager = () => {
         
         if (response.ok) {
           const sessionData = await response.json();
-          console.log('Session created successfully:', sessionData.data.sessionId);
+          logger.info('Session created successfully:', sessionData.data.sessionId);
           
           // Extract session details from the response
           const sessionDetails: Session = {
@@ -77,10 +79,10 @@ export const useSessionManager = () => {
           
           setSession(sessionData.data.sessionId, sessionDetails);
         } else {
-          console.log('Session creation failed, will retry...');
+          logger.warn('Session creation failed, will retry...');
         }
       } catch (error) {
-        console.error('Failed to initialize session:', error);
+        logger.error('Failed to initialize session:', error);
       } finally {
         isCreatingSessionRef.current = false; // Reset the flag
       }
@@ -101,7 +103,15 @@ export const useSessionManager = () => {
         try {
           const token = localStorage.getItem('authToken');
           if (!token) return;
-          console.log('Sending heartbeat for session:', sessionId);
+          
+          const now = Date.now();
+          // Only send heartbeat if enough time has passed since last one
+          if (now - lastHeartbeatRef.current < HEARTBEAT_INTERVAL) {
+            return;
+          }
+          
+          logger.info('Sending heartbeat for session:', sessionId);
+          lastHeartbeatRef.current = now;
 
           const res = await fetch(`/api/sessions/${sessionId}/heartbeat`, {
             method: 'PUT',
@@ -112,19 +122,17 @@ export const useSessionManager = () => {
           
           if (res.status === 404) {
             // Session is not found (closed by bg job), stop heartbeats
-            console.log('Session not found (ended by background job), clearing session');
+            logger.info('Session not found (ended by background job), clearing session');
             clearSession();
           } else if (res.ok) {
-            // Update session details with the latest information from heartbeat response
-            const updatedSessionData = await res.json();
-            if (updateSessionFromResponse(updatedSessionData)) {
-              console.log('Session details updated after heartbeat');
-            }
+            // Only update essential session info to prevent unnecessary re-renders
+            // Don't update the entire session details object
+            logger.info('Heartbeat successful for session:', sessionId);
           }
         } catch (error) {
-          console.error('Heartbeat failed:', error);
+          logger.error('Heartbeat failed:', error);
         }
-      }, HEARTBEAT_INTERVAL); // Every 10 seconds
+      }, HEARTBEAT_INTERVAL); // Every 15 seconds
     }
 
     // Cleanup function to clear interval on component unmount or status change
@@ -181,7 +189,7 @@ export const useSessionManager = () => {
       const token = localStorage.getItem('authToken');
       if (!token) return;
 
-      console.log('Immediately validating session when returning to tab:', sessionId);
+      logger.info('Immediately validating session when returning to tab:', sessionId);
       
       const res = await fetch(`/api/sessions/${sessionId}/heartbeat`, {
         method: 'PUT',
@@ -192,19 +200,19 @@ export const useSessionManager = () => {
       
       if (res.status === 404) {
         // Session not found (ended by background job), clear it immediately
-        console.log('Session validation failed - session ended by background job, clearing immediately');
+        logger.info('Session validation failed - session ended by background job, clearing immediately');
         clearSession();
       } else if (res.ok) {
         // Update session details with the latest information from validation response
         const updatedSessionData = await res.json();
         if (updateSessionFromResponse(updatedSessionData)) {
-          console.log('Session validation successful - session details updated');
+          logger.info('Session validation successful - session details updated');
         } else {
-          console.log('Session validation successful - continuing with existing session');
+          logger.info('Session validation successful - continuing with existing session');
         }
       }
     } catch (error) {
-      console.error('Immediate session validation failed:', error);
+      logger.error('Immediate session validation failed:', error);
       // On error, clear session to be safe
       clearSession();
     }

@@ -167,6 +167,8 @@ export interface UserInteraction {
   hint_level?: number;
   time_spent_seconds?: number;
   timestamp: string;
+  answer_correctness?: number; // AI-evaluated correctness score (0.0 to 1.0)
+  answer_analysis?: string; // Detailed AI feedback and analysis
   kc_mappings?: InteractionKCMapping[];
 }
 

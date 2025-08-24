@@ -14,14 +14,13 @@
 
 ## 📚 Overview
 
-IntelliCS is an Intelligent Tutoring System (ITS) designed to enhance computer science education through personalized learning experiences, adaptive scaffolding, and real-time feedback. The system implements proven ITS principles to provide an engaging and effective learning environment for students.
+IntelliCS is an Intelligent Tutoring System (ITS) designed to enhance computer science education through personalized learning experiences: Question recommendation, Lesson recommendation, scaffolding, hints. The system implements proven ITS principles to provide an engaging and effective learning environment for students.
 
 ## 🎯 Motivation
 
 Computer Science education faces several challenges:
 - Students often struggle with complex concepts and problem-solving
 - Traditional learning methods may not cater to individual learning styles
-- Lack of immediate feedback and guidance
 - Difficulty in tracking learning progress and identifying knowledge gaps
 
 IntelliCS addresses these challenges by implementing key ITS principles:
@@ -39,7 +38,6 @@ IntelliCS addresses these challenges by implementing key ITS principles:
 ### Hints System
 - Contextual hints providing instruction in problem-solving context
 - Support for both declarative information and worked examples
-- Figures and text-based hints shown upon request
 - Bottom-out hints for final solution guidance
 
 ### Scaffolding
@@ -63,10 +61,10 @@ IntelliCS addresses these challenges by implementing key ITS principles:
 - Adaptive problem selection
 
 ### Data Collection
-- Comprehensive student interaction logging
-- Education data science support
-- Research-friendly data format
-- Interaction-level tracking
+- Comprehensive student interaction logging and recommendation logging.
+- Education data science support.
+- Research-friendly data format.
+- Interaction-level tracking.
 
 ### Immediate Feedback
 - Real-time answer correctness feedback
@@ -74,9 +72,11 @@ IntelliCS addresses these challenges by implementing key ITS principles:
 ## 🛠️ Technology Stack
 
 - **Frontend**: Next.js 13, TypeScript, Tailwind CSS
+- **Backend**: Spring Boot, Java
+- **Database**: PostgreSQL
 - **UI Components**: shadcn/ui
 - **State Management**: Zustand
-- **Deployment**: Cloudflare Pages
+- **Deployment**: Vercel
 - **Analytics**: Custom implementation for learning analytics
 
 ## 🚀 Getting Started
@@ -84,6 +84,7 @@ IntelliCS addresses these challenges by implementing key ITS principles:
 ### Prerequisites
 
 - Node.js 20.x or later
+- Java 17.x or later
 - npm 9.x or later
 
 ### Installation
@@ -119,17 +120,33 @@ IntelliCS addresses these challenges by implementing key ITS principles:
 - [x] Basic hint system
 - [x] Knowledge Tracing implementation
 - [x] Student interaction logging
+- [x] User authentication system
+- [x] Admin dashboard
+- [x] Question recommendation based on student's mastery level
+- [x] Lesson recommendation based on student's mastery level
+
+### Content
+Used n8n workflows to generate content for the system. Currently have 51 knowledge components, 21 lessons, 237 questions.
+
+### Data collection
+Collecting interaction data of: 
+- [x] Question attempts(correct/incorrect.)
+- [x] Question skipped(if student skips the question).
+- [x] Scaffold attempts(correct/incorrect.)
+- [x] Hint requests(different levels of hints, currently 2 levels of hints are supported for each question)
+- [x] Scaffold requests
+- [x] Lesson starts. 
+- [x] Lesson ends.
+- [x] Question presented(to log recommended question, as well as question time)
+
 
 ### In Progress 🚧
 - [ ] Enhanced analytics dashboard
 - [ ] Advanced scaffolding algorithms
-- [ ] Performance optimizations
-- [ ] Additional question types
-- [ ] User authentication system
-- [ ] Bottom-out hints implementation
+- [ ] Performance optimizations(currently, the system is not optimized for large number of users)
+- [ ] Additional question types(currently, only multiple choice and written questions are supported)
+- [ ] Bottom-out hints implementation(the final solution will be provided to the student after all hints and scaffolds are requested)
 
-### Planned Features 📝
-- [ ] AI-powered learning recommendations
 
 ## Contributing
 

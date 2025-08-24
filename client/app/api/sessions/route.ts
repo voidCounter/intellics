@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDeviceTypeForBackend } from '@/lib/utils/server-device-detection';
 
+import { logger } from '@/lib/utils';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     const sessionData = await backendResponse.json();
     return NextResponse.json(sessionData);
   } catch (error) {
-    console.error('Error creating session:', error);
+    logger.error('Error creating session:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

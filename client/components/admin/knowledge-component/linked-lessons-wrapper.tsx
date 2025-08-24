@@ -7,6 +7,7 @@ import { useLessonTitles } from "@/hooks/useLessons"
 import { useAddKCToLesson, useRemoveKCFromLesson, useUpdateKCTargetMastery } from "@/hooks/useKnowledgeComponent"
 import { LinkedItems } from "./linked-items"
 
+import { logger } from '@/lib/utils';
 interface LinkedLesson {
   lesson_id: string
   lesson_name: string
@@ -92,7 +93,7 @@ export function LinkedLessonsWrapper({ lessons, kcId, onLessonsChange, navigateT
         onLessonsChange(updatedLessons)
       }
     } catch (error) {
-      console.error('Error updating target mastery:', error)
+      logger.error('Error updating target mastery:', error)
       // Revert the local change on error
       lesson.target_mastery = lesson.target_mastery
     }

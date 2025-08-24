@@ -12,7 +12,8 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoadingAuth } = useAuthStore();
-  const { sessionId, status } = useSessionStore();
+  const sessionId = useSessionStore((state) => state.sessionId);
+  const status = useSessionStore((state) => state.status);
   const router = useRouter();
 
   // Initialize session management for protected routes

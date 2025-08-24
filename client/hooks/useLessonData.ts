@@ -37,8 +37,11 @@ export const useLessonData = (lessonId?: string) => {
       return data.data;
     },
     enabled: !!lessonId, // Only run query when lessonId is provided
-    staleTime: 2 * 60 * 1000, // 2 minutes - lesson content might change
+    staleTime: 10 * 60 * 1000, // 10 minutes - lesson content rarely changes
+    gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache longer
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: false, // Don't refetch when component mounts if we have data
+    refetchOnReconnect: false, // Don't refetch when reconnecting
   });
 
   return {

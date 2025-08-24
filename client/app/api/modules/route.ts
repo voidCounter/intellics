@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/utils';
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8080/api/v1';
 
 export async function GET(request: NextRequest) {
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching modules:', error);
+    logger.error('Error fetching modules:', error);
     return NextResponse.json(
       { error: 'Failed to fetch modules' },
       { status: 500 }
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error creating module:', error);
+    logger.error('Error creating module:', error);
     return NextResponse.json(
       { error: 'Failed to create module' },
       { status: 500 }
@@ -112,7 +113,7 @@ export async function PUT(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error updating module:', error);
+    logger.error('Error updating module:', error);
     return NextResponse.json(
       { error: 'Failed to update module' },
       { status: 500 }

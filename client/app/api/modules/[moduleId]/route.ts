@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/utils';
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8080/api/v1';
 
 export async function GET(
@@ -38,7 +39,7 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching module:', error);
+    logger.error('Error fetching module:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -102,7 +103,7 @@ export async function DELETE(
       );
     }
   } catch (error) {
-    console.error('Error deleting module:', error);
+    logger.error('Error deleting module:', error);
     return NextResponse.json(
       { error: 'Failed to delete module' },
       { status: 500 }

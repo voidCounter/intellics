@@ -1,33 +1,34 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, BookOpen, Clock, TestTube } from 'lucide-react';
+import { ArrowLeft, BookOpen, Clock, Brain, Play } from 'lucide-react';
 import { useLessonData } from '@/hooks/useLessonData';
 import { Lesson } from '@/types/api';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { useSessionStore } from '@/lib/stores';
 import { MarkdownContent } from '@/components/ui/markdown-content';
 import { useInteractionLogger } from '@/lib/services/interactionLogger';
+import { logger } from '@/lib/utils';
 
 export default function LessonPageClient() {
   const params = useParams();
   const { currentLesson, isLoading, error } = useLessonData(params.lesson_id as string);
-  const { sessionId } = useSessionStore();
+  const sessionId = useSessionStore((state) => state.sessionId);
   const startTimeRef = useRef<number | null>(null);
   const interactionLogger = useInteractionLogger();
 
   // Debug session state
   useEffect(() => {
-    console.log('LessonPageClient - sessionId changed:', sessionId);
+    logger.info('LessonPageClient - sessionId changed:', sessionId);
   }, [sessionId]);
 
   useEffect(() => {
-    console.log('LessonPageClient mounted');
+    logger.info('LessonPageClient mounted');
   }, []);
 
   useEffect(() => {
@@ -37,10 +38,10 @@ export default function LessonPageClient() {
       // Log lesson start interaction using centralized logger
       if (currentLesson && sessionId) {
         startTimeRef.current = Date.now();
-        console.log('Logging lesson start - sessionId:', sessionId, 'lessonId:', lessonId, 'moduleId:', params.module_id);
+        logger.info('Logging lesson start - sessionId:', sessionId, 'lessonId:', lessonId, 'moduleId:', params.module_id);
         interactionLogger.logLessonStart(sessionId, lessonId, params.module_id as string)
           .catch((error: unknown) => {
-            console.error('Failed to log lesson start interaction:', error);
+            logger.error('Failed to log lesson start interaction:', error);
           });
       }
     }
@@ -59,7 +60,7 @@ export default function LessonPageClient() {
               params.module_id as string,
               timeSpent
             ).catch((error: unknown) => {
-              console.error('Failed to log lesson exit interaction:', error);
+              logger.error('Failed to log lesson exit interaction:', error);
             });
           }
         }
@@ -67,6 +68,16 @@ export default function LessonPageClient() {
     };
   }, [currentLesson, params.module_id, sessionId]);
 
+  // Memoize lesson content to prevent unnecessary re-renders
+  const memoizedLessonContent = useMemo(() => {
+    if (!currentLesson) return null;
+    return (
+      <MarkdownContent 
+        content={currentLesson.lesson_content}
+        variant="lesson"
+      />
+    );
+  }, [currentLesson?.lesson_content]);
 
 
   if (isLoading) {
@@ -151,10 +162,7 @@ export default function LessonPageClient() {
           <div className="lg:col-span-2">
             <Card className='pt-6 border-0'>
               <CardContent className='border-0'>
-                <MarkdownContent 
-                  content={currentLesson.lesson_content}
-                  variant="lesson"
-                />
+                {memoizedLessonContent}
               </CardContent>
             </Card>
           </div>
@@ -165,14 +173,14 @@ export default function LessonPageClient() {
             <Card>
               <CardContent className="p-6">
                 <div className="text-center">
-                  <TestTube className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                  <Brain className="h-12 w-12 text-blue-600 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to Practice?</h3>
                   <p className="text-gray-600 mb-4">
                     Test your understanding with practice questions based on this lesson.
                   </p>
                   <Button asChild className="w-full" size="lg">
                     <Link href={`/modules/${params.module_id}/lessons/${currentLesson.lesson_id}/practice`}>
-                      <TestTube className="h-4 w-4 mr-2" />
+                      <Play className="h-4 w-4 mr-2" />
                       Start Practice Questions
                     </Link>
                   </Button>

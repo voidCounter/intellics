@@ -36,3 +36,6 @@ logging:
     org.springframework.security: DEBUG
     org.intellics.backend.services.impl.SessionCleanupServiceImpl: DEBUG
     org.intellics.backend.services.impl.UserInteractionServiceImpl: DEBUG
+    org.intellics.backend.services.impl.QuestionRecommendationServiceImpl: DEBUG
+    org.intellics.backend.services.impl.LLMServiceImpl: DEBUG
+    org.intellics.backend.controller.LLMController: DEBUG

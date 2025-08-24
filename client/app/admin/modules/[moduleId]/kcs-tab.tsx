@@ -5,6 +5,7 @@ import { Edit, Eye, Trash2, Search, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { KCTree, buildKCTree, KCTreeNode } from '@/components/admin/knowledge-component/kc-tree';
+import { logger } from '@/lib/utils';
 import { 
   useModuleKCs, 
   useRemoveKCFromModule, 
@@ -90,12 +91,12 @@ export function ModuleKCsTab({ moduleId }: ModuleKCsTabProps) {
 
   const handleEditKC = (kcId: string) => {
     // TODO: Implement edit functionality
-    console.log('Edit KC:', kcId);
+    logger.log('Edit KC:', kcId);
   };
 
   const handleViewKC = (kcId: string) => {
     // TODO: Implement view functionality
-    console.log('View KC:', kcId);
+    logger.log('View KC:', kcId);
   };
 
   const clearSearch = () => {

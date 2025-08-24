@@ -204,9 +204,9 @@ export function KCTree({ nodes, onReorder, onEdit, onView, onRemove }: KCTreePro
   const [isDragging, setIsDragging] = useState(false);
 
   // Debug: Log the tree structure
-  console.log('KCTree nodes:', nodes);
-  console.log('KCTree localNodes:', localNodes);
-  console.log('KCTree expandedNodes:', expandedNodes);
+  logger.log('KCTree nodes:', nodes);
+  logger.log('KCTree localNodes:', localNodes);
+  logger.log('KCTree expandedNodes:', expandedNodes);
 
   // Update localNodes when nodes prop changes
   useEffect(() => {
@@ -221,17 +221,17 @@ export function KCTree({ nodes, onReorder, onEdit, onView, onRemove }: KCTreePro
   );
 
   const toggleNode = (nodeId: string) => {
-    console.log('toggleNode called with:', nodeId);
+    logger.log('toggleNode called with:', nodeId);
     setExpandedNodes(prev => {
       const newSet = new Set(prev);
       if (newSet.has(nodeId)) {
         newSet.delete(nodeId);
-        console.log('Node collapsed:', nodeId);
+        logger.log('Node collapsed:', nodeId);
       } else {
         newSet.add(nodeId);
-        console.log('Node expanded:', nodeId);
+        logger.log('Node expanded:', nodeId);
       }
-      console.log('New expandedNodes:', newSet);
+      logger.log('New expandedNodes:', newSet);
       return newSet;
     });
   };
@@ -360,7 +360,7 @@ export function KCTree({ nodes, onReorder, onEdit, onView, onRemove }: KCTreePro
     const hasChildren = node.children && node.children.length > 0;
     const indentLevel = node.level * 24; // Increased indent for better visual hierarchy
 
-    console.log(`Rendering node ${node.id}:`, {
+    logger.log(`Rendering node ${node.id}:`, {
       name: node.kc_name,
       level: node.level,
       hasChildren,
@@ -408,7 +408,7 @@ export function KCTree({ nodes, onReorder, onEdit, onView, onRemove }: KCTreePro
 
 // Utility function to build tree from flat KC list
 export function buildKCTree(kcs: any[]): KCTreeNode[] {
-  console.log('buildKCTree input:', kcs);
+  logger.log('buildKCTree input:', kcs);
   const kcMap = new Map<string, any>();
   const rootNodes: KCTreeNode[] = [];
 
@@ -460,6 +460,6 @@ export function buildKCTree(kcs: any[]): KCTreeNode[] {
   };
 
   const result = sortAllLevels(rootNodes);
-  console.log('buildKCTree result:', result);
+  logger.log('buildKCTree result:', result);
   return result;
 }

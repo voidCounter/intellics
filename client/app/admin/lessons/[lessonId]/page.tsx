@@ -33,6 +33,7 @@ import {
 import { cn } from "@/lib/utils";
 import { MarkdownContent } from '@/components/ui/markdown-content';
 
+import { logger } from '@/lib/utils';
 interface LessonData {
   lesson_id: string;
   lesson_name: string;
@@ -514,9 +515,9 @@ function LessonKCMappingsSection({ lessonId, queryClient, onKCsChange }: { lesso
   ) || [];
 
   // Debug logging
-  console.log('Available KCs:', availableKCs);
-  console.log('Lesson with KCs:', lessonWithKCs);
-  console.log('Available KCs for lesson:', availableKCsForLesson);
+  logger.log('Available KCs:', availableKCs);
+  logger.log('Lesson with KCs:', lessonWithKCs);
+  logger.log('Available KCs for lesson:', availableKCsForLesson);
 
   return (
     <div className="space-y-4">

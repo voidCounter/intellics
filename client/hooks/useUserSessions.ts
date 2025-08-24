@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { UserSession } from '@/types/api';
 import { useAuthStore } from '@/lib/stores/auth-store';
 
+import { logger } from '@/lib/utils';
 interface UseUserSessionsOptions {
   isActive?: boolean;
   deviceType?: string;
@@ -48,7 +49,7 @@ export const useUserSessions = (options: UseUserSessionsOptions = {}) => {
       }
     } catch (err) {
       setError('Error fetching sessions');
-      console.error('Error fetching sessions:', err);
+      logger.error('Error fetching sessions:', err);
     } finally {
       setIsLoading(false);
     }

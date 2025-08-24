@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { ModuleLessonMapping, ModuleLessonOrderUpdate, LessonOrderItem } from '@/types/api';
 
+import { logger } from '@/lib/utils';
 interface ModuleLessonsTabProps {
   moduleId: string;
 }
@@ -111,7 +112,7 @@ export function ModuleLessonsTab({ moduleId }: ModuleLessonsTabProps) {
       // Only set items if we don't have any yet (initial load)
       // AND if user hasn't manually reordered anything
       const sortedLessons = [...lessons].sort((a, b) => a.orderIndex - b.orderIndex);
-      console.log('Setting initial sorted lessons:', sortedLessons);
+      logger.log('Setting initial sorted lessons:', sortedLessons);
       setItems(sortedLessons);
     }
   }, [lessons, items.length, hasManualReordering]);
@@ -144,14 +145,14 @@ export function ModuleLessonsTab({ moduleId }: ModuleLessonsTabProps) {
       toast.success('Lesson removed from module successfully')
     },
     onError: (error: Error) => {
-      console.error('Error removing lesson from module:', error)
+      logger.error('Error removing lesson from module:', error)
       toast.error(error.message || 'Failed to remove lesson from module')
     },
   });
 
   const updateLessonOrderMutation = useMutation({
     mutationFn: async (orderUpdate: ModuleLessonOrderUpdate) => {
-      console.log('Sending order update to backend:', orderUpdate);
+      logger.log('Sending order update to backend:', orderUpdate);
       const token = localStorage.getItem('authToken')
       if (!token) {
         throw new Error('Authentication required')
@@ -174,12 +175,12 @@ export function ModuleLessonsTab({ moduleId }: ModuleLessonsTabProps) {
       return response
     },
     onSuccess: () => {
-      console.log('Order update successful - keeping UI smooth');
+      logger.log('Order update successful - keeping UI smooth');
       // DON'T invalidate cache - keep the optimistic update
       toast.success('Lesson order updated successfully')
     },
     onError: (error: Error) => {
-      console.error('Error updating lesson orders:', error)
+      logger.error('Error updating lesson orders:', error)
       toast.error(error.message || 'Failed to update lesson orders')
       // Revert to original order on error by refetching
       queryClient.invalidateQueries({ queryKey: ['module-lessons', moduleId] })
@@ -201,20 +202,20 @@ export function ModuleLessonsTab({ moduleId }: ModuleLessonsTabProps) {
   };
 
   const handleDragStart = (result: any) => {
-    console.log('Drag started:', result);
+    logger.log('Drag started:', result);
   };
 
   const handleDragEnd = (result: DropResult) => {
-    console.log('Drag ended:', result);
-    console.log('Current items before reorder:', items);
+    logger.log('Drag ended:', result);
+    logger.log('Current items before reorder:', items);
     
     if (!result.destination) {
-      console.log('No destination, no change');
+      logger.log('No destination, no change');
       return;
     }
 
     if (result.destination.index === result.source.index) {
-      console.log('Same position, no change');
+      logger.log('Same position, no change');
       return;
     }
 
@@ -228,7 +229,7 @@ export function ModuleLessonsTab({ moduleId }: ModuleLessonsTabProps) {
       item.orderIndex = index + 1;
     });
 
-    console.log('New items after reorder:', newItems);
+    logger.log('New items after reorder:', newItems);
     
     // Mark that user has manually reordered
     setHasManualReordering(true);
@@ -246,7 +247,7 @@ export function ModuleLessonsTab({ moduleId }: ModuleLessonsTabProps) {
       lessonOrders,
     };
 
-    console.log('Sending order update:', orderUpdate);
+    logger.log('Sending order update:', orderUpdate);
 
     // Update the order on the backend WITHOUT invalidating cache
     updateLessonOrderMutation.mutate(orderUpdate);

@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useContentStore, useProgressStore } from '@/lib/stores';
 import { dataApi } from '@/services/api';
 
+import { logger } from '@/lib/utils';
 export const useData = () => {
   const { 
     modules, 
@@ -43,7 +44,7 @@ export const useData = () => {
       setKCMasteries([]);
       setUserInteractions([]);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
     }
   }, [setModules, setLessons, setQuestions, setScaffolds, setKnowledgeComponents, setKCMasteries, setUserInteractions]);
 

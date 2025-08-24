@@ -10,6 +10,7 @@ import org.intellics.backend.repositories.StudentKCMasteryRepository;
 import org.intellics.backend.repositories.UserRepository;
 import org.intellics.backend.repositories.KnowledgeComponentRepository;
 import org.intellics.backend.services.KCMasteryService;
+import org.intellics.backend.services.StrategyRuleEngine;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +47,7 @@ public class KCMasteryServiceImpl implements KCMasteryService {
     private final InteractionKCMappingRepository interactionKCMappingRepository;
     private final UserRepository userRepository;
     private final KnowledgeComponentRepository knowledgeComponentRepository;
+    private final StrategyRuleEngine strategyRuleEngine;
 
     /**
      * Default BKT parameters for new KCs (lazy-initialized on first encounter)
@@ -115,11 +117,58 @@ public class KCMasteryServiceImpl implements KCMasteryService {
     }
 
     private boolean shouldUpdateMastery(InteractionType interactionType) {
+        // Use strategy-based rules instead of hardcoded logic
+        // This method is now deprecated in favor of strategy-based mastery updates
         return switch (interactionType) {
             case QUESTION_ATTEMPTED, SCAFFOLD_ATTEMPTED -> true;
             case QUESTION_SKIPPED -> true; // Optional: could be false if you don't want to penalize skips
             case HINT_REQUESTED, SCAFFOLD_REQUESTED, LESSON_START, LESSON_EXIT, QUESTION_PRESENTED, SCAFFOLD_ANSWER -> false;
         };
+    }
+    
+    /**
+     * Strategy-based mastery update check
+     */
+    private boolean shouldUpdateMasteryWithStrategy(UserInteraction interaction) {
+        if (strategyRuleEngine == null) {
+            // Fallback to old logic if strategy engine not available
+            return shouldUpdateMastery(interaction.getInteractionType());
+        }
+        
+        return strategyRuleEngine.shouldUpdateMastery(interaction, interaction.getUser().getUser_id());
+    }
+    
+    /**
+     * Strategy-based weight calculation
+     * 
+     * Strategy weight is applied as a MULTIPLIER to the base mapping weight:
+     * effectiveWeight = mappingWeight * strategyWeight
+     * 
+     * This ensures that:
+     * - Question KCs always use question_kc_mapping.weight as base
+     * - Strategy weight modifies the learning impact (e.g., 0.5 = half impact, 2.0 = double impact)
+     * - Base mapping weights are preserved and only scaled by strategy
+     */
+    private double calculateEffectiveWeightWithStrategy(UserInteraction interaction, double baseWeight) {
+        if (strategyRuleEngine == null) {
+            // Fallback to base weight if no strategy engine
+            return baseWeight;
+        }
+        
+        double strategyWeight = strategyRuleEngine.calculateEffectiveWeight(interaction, interaction.getUser().getUser_id());
+        
+        if (strategyWeight <= 0) {
+            // Strategy weight of 0 or negative means no mastery update
+            return 0.0;
+        }
+        
+        // Apply strategy weight as MULTIPLIER to base weight
+        double effectiveWeight = baseWeight * strategyWeight;
+        
+        log.debug("Strategy weight calculation: baseWeight={} * strategyWeight={} = effectiveWeight={}", 
+            baseWeight, strategyWeight, effectiveWeight);
+        
+        return effectiveWeight;
     }
 
     /**
@@ -206,23 +255,30 @@ public class KCMasteryServiceImpl implements KCMasteryService {
         double masteryBefore = currentMastery.getP_mastery();
         double masteryAfter = masteryBefore; // Default: no change
 
-        // 2. Update mastery only for learning interactions
-        if (shouldUpdateMastery(interaction.getInteractionType())) {
-            log.debug("Calculating BKT update with weight: {} for user: {}, KC: {}", weight, userId, kcId);
+        // 2. Update mastery only for learning interactions (using strategy-based rules)
+        if (shouldUpdateMasteryWithStrategy(interaction)) {
+            // Calculate effective weight based on user's strategy
+            double effectiveWeight = calculateEffectiveWeightWithStrategy(interaction, weight);
+            
+            log.debug("Calculating BKT update with effective weight: {} (base weight: {}) for user: {}, KC: {}", 
+                effectiveWeight, weight, userId, kcId);
+            
             masteryAfter = calculateBKTUpdate(
                 masteryBefore,
                 interaction.is_correct(),
                 currentMastery.getP_guess(),
                 currentMastery.getP_slip(),
                 currentMastery.getP_transit(),
-                weight
+                effectiveWeight
             );
 
-            log.debug("Updated mastery for user: {}, KC: {}: {} -> {} (weight: {})", 
-                userId, kcId, masteryBefore, masteryAfter, weight);
+            log.debug("Updated mastery for user: {}, KC: {}: {} -> {} (effective weight: {})", 
+                userId, kcId, masteryBefore, masteryAfter, effectiveWeight);
         } else {
-            log.debug("No mastery update for interaction type: {}, mastery unchanged: {} (weight: {})", 
-                interaction.getInteractionType(), masteryBefore, weight);
+            log.debug("No mastery update for interaction type: {} (strategy: {}), mastery unchanged: {} (weight: {})", 
+                interaction.getInteractionType(), 
+                strategyRuleEngine != null ? strategyRuleEngine.getUserStrategyName(userId) : "UNKNOWN",
+                masteryBefore, weight);
         }
 
         // 3. Always update user_kc_mastery (even for non-learning interactions)

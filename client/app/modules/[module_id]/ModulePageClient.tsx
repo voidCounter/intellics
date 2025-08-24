@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, ArrowLeft } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BookOpen, ArrowLeft, Brain, Play, PlayIcon } from 'lucide-react';
 import { useModuleData } from '@/hooks/useModuleData';
 import { Module, ModuleLessonMapping } from '@/types/api';
 import { ProtectedRoute } from '@/components/auth/protected-route';
@@ -93,78 +94,95 @@ export default function ModulePageClient() {
             </Link>
           </Button>
         </div>
+        
         {/* Module Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="bg-blue-600 p-3 rounded-lg">
-              <BookOpen className="h-6 w-6 text-white" />
+          <div className="flex items-start gap-6">
+            {/* Icon */}
+            <div className="bg-secondary p-4 rounded-xl flex-shrink-0">
+              <BookOpen className="h-8 w-8 text-primary" />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{currentModule.module_name}</h1>
-              <p className="text-gray-600 mt-1">{currentModule.description}</p>
-            </div>
-          </div>
-          <Badge variant="secondary" className="text-sm">
-            {moduleLessons.length} lesson{moduleLessons.length !== 1 ? 's' : ''} available
-          </Badge>
-        </div>
-        {/* Lessons Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {moduleLessons.map((lesson, index) => (
-            <Card key={lesson.lessonId} className="hover:shadow-lg transition-shadow flex flex-col">
-              <CardHeader className='gap-2'>
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-xs">
-                    Lesson {index + 1}
-                  </Badge>
-                </div>
-                <CardTitle className="text-lg font-bold leading-tight">
-                  {lesson.lessonName}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col flex-1 justify-between -mt-4">
-                <div className="text-gray-600 mb-4 text-sm leading-relaxed prose prose-sm max-w-none">
-                  <div className="text-gray-600 text-sm leading-relaxed">
-                    {(() => {
-                      const text = lesson.shortDescription || lesson.lessonName;
-                      const truncatedText = truncateText(text, 120);
-                      
-                      // Simple markdown rendering for basic formatting
-                      const formattedText = truncatedText
-                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-                        .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
-                        .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-xs">$1</code>') // Inline code
-                        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:underline">$1</a>'); // Links
-                      
-                      return (
-                        <div 
-                          dangerouslySetInnerHTML={{ __html: formattedText }}
-                          className="prose prose-sm max-w-none"
-                        />
-                      );
-                    })()}
-                  </div>
-                </div>
-                <Button 
-                  asChild 
-                  variant={"secondary"}
-                  className=""
-                >
-                  <Link href={`/modules/${params.module_id}/lessons/${lesson.lessonId}`}>
-                    Start Lesson
+            
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {currentModule.module_name}
+              </h1>
+              <p className="text-gray-600 text-lg mb-4">
+                {currentModule.description}
+              </p>
+              <div className="flex items-center gap-4">
+                <Badge variant="secondary" className="text-sm px-3 py-1">
+                  {moduleLessons.length} lesson{moduleLessons.length !== 1 ? 's' : ''}
+                </Badge>
+                <Button asChild variant="default" size="sm">
+                  <Link href={`/modules/${params.module_id}/practice`}>
+                    <Play className="h-4 w-4 mr-2" />
+                    Start Practice
                   </Link>
                 </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        {moduleLessons.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600">No lessons available for this module yet.</p>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
-    </ProtectedRoute>
-  );
+        </div>
+
+        {/* Lessons Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {moduleLessons.map((lesson, index) => (
+                <Card key={lesson.lessonId} className="hover:shadow-lg transition-shadow flex flex-col">
+                  <CardHeader className='gap-2'>
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className="text-xs">
+                        Lesson {index + 1}
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-lg font-bold leading-tight">
+                      {lesson.lessonName}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col flex-1 justify-between -mt-4">
+                    <div className="text-gray-600 mb-4 text-sm leading-relaxed prose prose-sm max-w-none">
+                      <div className="text-gray-600 text-sm leading-relaxed">
+                        {(() => {
+                          const text = lesson.shortDescription || lesson.lessonName;
+                          const truncatedText = truncateText(text, 120);
+                          
+                          // Simple markdown rendering for basic formatting
+                          const formattedText = truncatedText
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+                            .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+                            .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-xs">$1</code>') // Inline code
+                            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:underline">$1</a>'); // Links
+                          
+                          return (
+                            <div 
+                              dangerouslySetInnerHTML={{ __html: formattedText }}
+                              className="prose prose-sm max-w-none"
+                            />
+                          );
+                        })()}
+                      </div>
+                    </div>
+                    <Button 
+                      asChild 
+                      variant={"secondary"}
+                      className=""
+                    >
+                      <Link href={`/modules/${params.module_id}/lessons/${lesson.lessonId}`}>
+                        Start Lesson
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            {moduleLessons.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-600">No lessons available for this module yet.</p>
+              </div>
+            )}
+        </div>
+      </ProtectedRoute>
+    );
 }
 

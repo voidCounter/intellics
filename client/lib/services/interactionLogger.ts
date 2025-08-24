@@ -1,18 +1,21 @@
 import React, { useEffect } from 'react';
 import { InteractionType } from '@/types/api';
 import { useSessionStore } from '@/lib/stores/session-store';
+import { logger } from '@/lib/utils';
 
 interface InteractionData {
   interaction_type: InteractionType;
+  question_id?: string;
   lesson_id?: string;
   module_id?: string;
-  question_id?: string;
   scaffold_id?: string;
+  session_id?: string;
   student_answer?: string;
   is_correct?: boolean;
   hint_level?: number;
   time_spent_seconds?: number;
-  session_id?: string;
+  answer_correctness?: number; // AI-evaluated correctness score (0.0 to 1.0)
+  answer_analysis?: string; // Detailed AI feedback and analysis
 }
 
 export class InteractionLogger {
@@ -22,11 +25,11 @@ export class InteractionLogger {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
-        console.error('No auth token found for interaction logging');
+        logger.error('No auth token found for interaction logging');
         return;
       }
 
-      console.log('Sending interaction to /api/interactions:', data);
+      logger.log('Sending interaction to /api/interactions:', data);
 
       const response = await fetch('/api/interactions', {
         method: 'POST',
@@ -37,25 +40,25 @@ export class InteractionLogger {
         body: JSON.stringify(data),
       });
 
-      console.log('Response status:', response.status, response.statusText);
+      logger.log('Response status:', response.status, response.statusText);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Response error text:', errorText);
+        logger.error('Response error text:', errorText);
         throw new Error(`Failed to log interaction: ${response.statusText} - ${errorText}`);
       }
 
       const responseData = await response.json();
-      console.log('Interaction logged successfully:', data.interaction_type, responseData);
+      logger.log('Interaction logged successfully:', data.interaction_type, responseData);
     } catch (error) {
-      console.error('Failed to log interaction:', error);
+      logger.error('Failed to log interaction:', error);
     }
   }
 
   // Question interactions
   public async logQuestionPresented(sessionId: string, questionId: string, lessonId?: string, moduleId?: string): Promise<void> {
     if (!sessionId) {
-      console.warn('No session ID provided for question presented logging');
+      logger.warn('No session ID provided for question presented logging');
       return;
     }
 
@@ -76,10 +79,12 @@ export class InteractionLogger {
     isCorrect: boolean, 
     lessonId?: string, 
     moduleId?: string,
-    timeSpentSeconds?: number
+    timeSpentSeconds?: number,
+    answerCorrectness?: number,
+    answerAnalysis?: string
   ): Promise<void> {
     if (!sessionId) {
-      console.warn('No session ID provided for question attempted logging');
+      logger.warn('No session ID provided for question attempted logging');
       return;
     }
 
@@ -91,7 +96,9 @@ export class InteractionLogger {
       session_id: sessionId,
       student_answer: answer,
       is_correct: isCorrect,
-      time_spent_seconds: timeSpentSeconds || 0
+      time_spent_seconds: timeSpentSeconds || 0,
+      answer_correctness: answerCorrectness,
+      answer_analysis: answerAnalysis
     });
   }
 
@@ -103,7 +110,7 @@ export class InteractionLogger {
     timeSpentSeconds?: number
   ): Promise<void> {
     if (!sessionId) {
-      console.warn('No session ID provided for question skipped logging');
+      logger.warn('No session ID provided for question skipped logging');
       return;
     }
 
@@ -126,7 +133,7 @@ export class InteractionLogger {
     moduleId?: string
   ): Promise<void> {
     if (!sessionId) {
-      console.warn('No session ID provided for hint requested logging');
+      logger.warn('No session ID provided for hint requested logging');
       return;
     }
 
@@ -150,7 +157,7 @@ export class InteractionLogger {
     moduleId?: string
   ): Promise<void> {
     if (!sessionId) {
-      console.warn('No session ID provided for scaffold requested logging');
+      logger.warn('No session ID provided for scaffold requested logging');
       return;
     }
 
@@ -176,7 +183,7 @@ export class InteractionLogger {
     timeSpentSeconds?: number
   ): Promise<void> {
     if (!sessionId) {
-      console.warn('No session ID provided for scaffold attempted logging');
+      logger.warn('No session ID provided for scaffold attempted logging');
       return;
     }
 
@@ -196,7 +203,7 @@ export class InteractionLogger {
   // Lesson interactions
   public async logLessonStart(sessionId: string, lessonId: string, moduleId?: string): Promise<void> {
     if (!sessionId) {
-      console.warn('No session ID provided for lesson start logging');
+      logger.warn('No session ID provided for lesson start logging');
       return;
     }
 
@@ -216,7 +223,7 @@ export class InteractionLogger {
     timeSpentSeconds?: number
   ): Promise<void> {
     if (!sessionId) {
-      console.warn('No session ID provided for lesson exit logging');
+      logger.warn('No session ID provided for lesson exit logging');
       return;
     }
 
@@ -241,7 +248,7 @@ export class InteractionLogger {
     timeSpentSeconds?: number
   ): Promise<void> {
     if (!sessionId) {
-      console.warn('No session ID provided for scaffold answer logging');
+      logger.warn('No session ID provided for scaffold answer logging');
       return;
     }
 

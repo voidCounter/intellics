@@ -11,6 +11,7 @@ import { useKnowledgeComponents, useSoftDeleteKnowledgeComponents } from '@/hook
 import { Button } from '@/components/ui/button';
 import { Trash2, RotateCcw } from 'lucide-react';
 
+import { logger } from '@/lib/utils';
 export default function KnowledgeComponentsPage() {
   const router = useRouter();
   const { data: knowledgeComponents, isLoading, error } = useKnowledgeComponents();
@@ -25,7 +26,7 @@ export default function KnowledgeComponentsPage() {
   
   // Debug logging
   if (selectedKCId && selectedKC) {
-    console.log('Selected KC computed:', selectedKC);
+    logger.log('Selected KC computed:', selectedKC);
   }
 
   // Handle KC updates from the drawer
@@ -35,7 +36,7 @@ export default function KnowledgeComponentsPage() {
 
   // Handle opening the drawer
   const openDrawer = (kc: KnowledgeComponentWithRelationships) => {
-    console.log('Opening drawer with KC:', kc);
+    logger.log('Opening drawer with KC:', kc);
     setSelectedKCId(kc.kc_id);
     setIsDrawerOpen(true);
   };
@@ -191,7 +192,7 @@ export default function KnowledgeComponentsPage() {
                     );
                     setSelectedRows([]);
                   } catch (error) {
-                    console.error('Error soft deleting knowledge components:', error);
+                    logger.error('Error soft deleting knowledge components:', error);
                   }
                 }}
                 disabled={batchDeleteMutation.isPending}

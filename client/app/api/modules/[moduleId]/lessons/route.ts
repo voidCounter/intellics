@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/utils';
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ moduleId: string }> }
@@ -37,7 +38,7 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching module lessons:', error);
+    logger.error('Error fetching module lessons:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -85,7 +86,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating lesson orders:', error);
+    logger.error('Error updating lesson orders:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

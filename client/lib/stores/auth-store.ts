@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, ApiResponse } from '@/types/api';
 
+import { logger } from '@/lib/utils';
 export interface AuthState {
   // User data
   user: User | null;
@@ -57,7 +58,7 @@ export const useAuthStore = create<AuthState>()(
             set({ user: null, isAuthenticated: false, isLoadingAuth: false, isAdminMode: false });
           }
         } catch (error) {
-          console.error('Auth check error:', error);
+          logger.error('Auth check error:', error);
           localStorage.removeItem('authToken');
           set({ user: null, isAuthenticated: false, isLoadingAuth: false, isAdminMode: false });
         }
@@ -102,7 +103,7 @@ export const useAuthStore = create<AuthState>()(
           }
           
         } catch (error) {
-          console.error('Failed to logout:', error);
+          logger.error('Failed to logout:', error);
         } finally {
           // Reset auth store
           get().resetAuth();

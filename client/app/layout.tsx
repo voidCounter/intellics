@@ -1,8 +1,15 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { DM_Sans } from 'next/font/google';
 import { Toaster } from "@/components/ui/sonner"
 import { Navbar } from '@/components/layout/navbar';
 import { AppProvider } from '@/components/providers/app-provider';
+
+const dmSans = DM_Sans({ 
+  subsets: ['latin'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Intellics - Intelligent Tutoring System',
@@ -16,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="font-sans">
+      <body className={`${dmSans.variable} font-sans`}>
         <AppProvider>
           <div className="min-h-screen">
             <Navbar />

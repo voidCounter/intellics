@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.intellics.backend.domain.entities.InteractionType;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Data
@@ -53,4 +54,10 @@ public class UserInteractionRequestDto {
     @PositiveOrZero(message = "Time spent must be zero or positive")
     @JsonProperty("time_spent_seconds")
     private Integer timeSpentSeconds;  // Optional thinking time
+    
+    @JsonProperty("answer_correctness")
+    private BigDecimal answerCorrectness;  // AI-evaluated correctness score (0.0 to 1.0)
+    
+    @JsonProperty("answer_analysis")
+    private String answerAnalysis;  // Detailed AI feedback and analysis
 }

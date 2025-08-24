@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/utils';
 export async function POST(request: NextRequest) {
   try {
     // Get the auth token from the request headers
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     const interactionData = await request.json();
     
     // Log what we're sending to debug the issue
-    console.log('Frontend sending interaction data:', JSON.stringify(interactionData, null, 2));
+    logger.log('Frontend sending interaction data:', JSON.stringify(interactionData, null, 2));
 
     // Call the backend API to create the interaction
     const backendResponse = await fetch(`${process.env.BACKEND_URL || 'http://localhost:8080'}/api/v1/interactions/track`, {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(backendData, { status: 201 });
     } else {
       const errorText = await backendResponse.text();
-      console.error('Backend interaction creation failed:', errorText);
+      logger.error('Backend interaction creation failed:', errorText);
       return NextResponse.json(
         { error: 'Failed to create interaction on backend' },
         { status: backendResponse.status }
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Interaction logging error:', error);
+    logger.error('Interaction logging error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
