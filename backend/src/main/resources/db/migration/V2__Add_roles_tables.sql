@@ -1,5 +1,5 @@
 CREATE TABLE roles (
-    role_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    role_id UUID PRIMARY KEY NOT NULL,
     name VARCHAR(20) NOT NULL
 );
 

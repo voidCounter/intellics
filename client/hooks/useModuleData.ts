@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Module, ModuleLessonMapping } from '@/types/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 export const useModuleData = (moduleId?: string) => {
   const {
@@ -17,7 +17,7 @@ export const useModuleData = (moduleId?: string) => {
         throw new Error('No auth token found');
       }
 
-      const response = await fetch(`${API_BASE_URL}/modules`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/modules`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -53,7 +53,7 @@ export const useModuleData = (moduleId?: string) => {
       }
 
       // Get lessons for the specific module, not all lessons globally
-      const response = await fetch(`${API_BASE_URL}/modules/${moduleId}/lessons`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/modules/${moduleId}/lessons`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

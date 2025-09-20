@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Lesson } from '@/types/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 export const useLessonData = (lessonId?: string) => {
   const {
@@ -22,7 +22,7 @@ export const useLessonData = (lessonId?: string) => {
       }
 
       // Use the single lesson endpoint instead of loading all lessons
-      const response = await fetch(`${API_BASE_URL}/lessons/${lessonId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/lessons/${lessonId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

@@ -43,21 +43,29 @@ export default function ModulePracticePageClient() {
   const [showResults, setShowResults] = useState(false);
   const [usedHints, setUsedHints] = useState<Set<string>>(new Set());
   const [usedScaffolds, setUsedScaffolds] = useState<Set<string>>(new Set());
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const practiceStartTimeRef = useRef<number | null>(null);
-  const startTestSentRef = useRef<boolean>(false);
+  const startTestSentRef = useRef<boolean>(null);
 
-  // Get the current question with scaffolds for complete data - using "all" scope for module practice
-  const { data: currentQuestion, isLoading: questionLoading } = useNextQuestionWithScaffolds(
+  // Get the first question when starting practice
+  const { data: firstQuestion, isLoading: questionLoading } = useNextQuestionWithScaffolds(
     undefined, // No lesson ID for module practice
     params.module_id as string,
     { 
-      enabled: showQuiz,
+      enabled: showQuiz && currentQuestionIndex === 0,
       staleTime: 10 * 60 * 1000, // 10 minutes - prevent refetching when switching tabs
       refetchOnWindowFocus: false, // Never refetch when switching tabs
       refetchOnMount: false, // Don't refetch when component mounts
       refetchOnReconnect: false // Don't refetch when reconnecting
     }
   );
+
+  // Set the first question when it loads
+  useEffect(() => {
+    if (firstQuestion && currentQuestionIndex === 0) {
+      setCurrentQuestion(firstQuestion);
+    }
+  }, [firstQuestion, currentQuestionIndex]);
 
   // Mutation for getting the next question
   const getNextQuestion = useGetNextQuestion();
@@ -119,6 +127,7 @@ export default function ModulePracticePageClient() {
     
     setShowQuiz(true);
     setCurrentQuestionIndex(0);
+    setCurrentQuestion(null); // Reset current question
     setQuizResults([]);
     setShowResults(false);
     setUsedHints(new Set());
@@ -202,19 +211,106 @@ export default function ModulePracticePageClient() {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     if (!currentQuestion || !sessionId) return;
     
-    // Log skip interaction
-    if (sessionId) {
-      interactionLogger.logQuestionSkipped(
+    try {
+      // Log skip interaction and wait for it to complete
+      logger.log('📝 Logging QUESTION_SKIPPED interaction for question:', currentQuestion.question_id);
+      await interactionLogger.logQuestionSkipped(
         sessionId,
         currentQuestion.question_id,
         undefined, // No lesson ID for module practice
         params.module_id as string
-      ).catch((error: unknown) => {
-        logger.error('Failed to log skip interaction:', error);
+      );
+      logger.log('✅ QUESTION_SKIPPED interaction logged successfully');
+
+      // Add a small delay to ensure the backend processes the interaction
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Add the question to results as skipped
+      const result: QuizResult = {
+        questionId: currentQuestion.question_id,
+        questionText: currentQuestion.question_text,
+        userAnswer: 'Skipped',
+        correctAnswer: 'Skipped',
+        isCorrect: false,
+        hintsUsed: Array.from(usedHints).filter(hint => 
+          hint.startsWith(currentQuestion.question_id)
+        ).length,
+        scaffoldUsed: Array.from(usedScaffolds).some(scaffold => 
+          scaffold.startsWith(currentQuestion.question_id)
+        )
+      };
+      setQuizResults(prev => [...prev, result]);
+
+      // Now get the next question after the interaction is logged
+      logger.log('🔄 Requesting next question after skip...');
+      const nextQuestion = await getNextQuestion.mutateAsync({
+        lessonId: undefined, // No lesson ID for module practice
+        moduleId: params.module_id as string
       });
+
+      if (nextQuestion) {
+        logger.log('📝 Received next question:', nextQuestion.question_id, 'Previous question was:', currentQuestion?.question_id);
+        
+        // Move to next question
+        setCurrentQuestionIndex(prev => prev + 1);
+        // Update the current question immediately
+        setCurrentQuestion(nextQuestion);
+        
+        // Log the next question presented
+        if (sessionId) {
+          logger.log('📝 Next question presented (skip):', nextQuestion.question_id);
+          interactionLogger.logQuestionPresented(
+            sessionId,
+            nextQuestion.question_id,
+            undefined, // No lesson ID for module practice
+            params.module_id as string
+          ).catch((error: unknown) => {
+            logger.error('Failed to log next question presented interaction:', error);
+          });
+        }
+      } else {
+        // No more questions, show results
+        setShowResults(true);
+        setShowQuiz(false);
+      }
+    } catch (error) {
+      logger.error('Failed to handle skip:', error);
+      // If logging fails, still try to get next question
+      try {
+        logger.log('🔄 Attempting to get next question despite logging failure...');
+        const nextQuestion = await getNextQuestion.mutateAsync({
+          lessonId: undefined, // No lesson ID for module practice
+          moduleId: params.module_id as string
+        });
+
+        if (nextQuestion) {
+          setCurrentQuestionIndex(prev => prev + 1);
+          setCurrentQuestion(nextQuestion);
+          
+          if (sessionId) {
+            logger.log('📝 Next question presented (skip fallback):', nextQuestion.question_id);
+            interactionLogger.logQuestionPresented(
+              sessionId,
+              nextQuestion.question_id,
+              undefined,
+              params.module_id as string
+            ).catch((error: unknown) => {
+              logger.error('Failed to log next question presented interaction:', error);
+            });
+          }
+        } else {
+          setShowResults(true);
+          setShowQuiz(false);
+        }
+      } catch (nextQuestionError) {
+        logger.error('Failed to get next question after skip:', nextQuestionError);
+        // Show results anyway
+        setShowResults(true);
+        setShowQuiz(false);
+      }
     }
   };
 
@@ -228,6 +324,8 @@ export default function ModulePracticePageClient() {
       if (nextQuestion) {
         // Move to next question
         setCurrentQuestionIndex(prev => prev + 1);
+        // Update the current question immediately
+        setCurrentQuestion(nextQuestion);
         
         // Log the next question presented
         if (sessionId) {
@@ -260,7 +358,7 @@ export default function ModulePracticePageClient() {
     // Check if this is a skip (empty answer and not correct)
     const isSkipped = answer === '' && !isCorrect;
 
-    // Log question attempted interaction
+    // Log question attempted interaction (for non-skips)
     if (!isSkipped && sessionId) {
       interactionLogger.logQuestionAttempted(
         sessionId,
@@ -275,6 +373,27 @@ export default function ModulePracticePageClient() {
       ).catch((error: unknown) => {
         logger.error('Failed to log question attempted interaction:', error);
       });
+    }
+
+    // Log skip interaction if this is a skip
+    if (isSkipped && sessionId) {
+      try {
+        logger.log('📝 Logging QUESTION_SKIPPED interaction for question:', currentQuestion.question_id);
+        await interactionLogger.logQuestionSkipped(
+          sessionId,
+          currentQuestion.question_id,
+          undefined, // No lesson ID for module practice
+          params.module_id as string
+        );
+        logger.log('✅ QUESTION_SKIPPED interaction logged successfully');
+      } catch (error) {
+        logger.error('Failed to log QUESTION_SKIPPED interaction:', error);
+      }
+    }
+
+    // Add a small delay after logging interactions to ensure backend processing
+    if (isSkipped) {
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     // Count hints used for this question
@@ -308,6 +427,7 @@ export default function ModulePracticePageClient() {
     // Only get next question for skips - for regular submissions, wait for user to click Continue
     if (isSkipped) {
       try {
+        logger.log('🔄 Requesting next question after skip...');
         const nextQuestion = await getNextQuestion.mutateAsync({
           lessonId: undefined, // No lesson ID for module practice
           moduleId: params.module_id as string
@@ -316,6 +436,12 @@ export default function ModulePracticePageClient() {
         if (nextQuestion) {
           // Move to next question
           setCurrentQuestionIndex(prev => prev + 1);
+          setCurrentQuestion(nextQuestion); // Update current question immediately
+          
+          // Check if we got the same question
+          if (nextQuestion.question_id === currentQuestion?.question_id) {
+            logger.warn('⚠️ Received the same question after skip in handleQuestionSubmit. This might indicate a backend issue.');
+          }
           
           // Log the next question presented
           if (sessionId) {

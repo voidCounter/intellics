@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-
 import { logger } from '@/lib/utils';
+
 const BACKEND_URL =  process.env.BACKEND_API || 'http://localhost:8080';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { questionId: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader) {
@@ -16,27 +13,11 @@ export async function POST(
       );
     }
 
-    const body = await request.json();
-    const { kc_id, weight } = body;
-
-    if (!kc_id || weight === undefined) {
-      return NextResponse.json(
-        { error: 'KC ID and weight are required' },
-        { status: 400 }
-      );
-    }
-
     // Forward the request to the backend
-    const response = await fetch(`${BACKEND_URL}/api/v1/questions/${params.questionId}/kcs`, {
-      method: 'POST',
+    const response = await fetch(`${BACKEND_URL}/api/v1/users/me/kc-mastery`, {
       headers: {
         'Authorization': authHeader,
-        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        kc_id: kc_id,
-        weight: weight
-      }),
     });
 
     if (!response.ok) {
@@ -48,11 +29,20 @@ export async function POST(
     }
 
     const data = await response.json();
+    
+    console.log('Backend response:', JSON.stringify(data, null, 2));
+    
+    if (Array.isArray(data)) {
+      console.log('Data is an array with', data.length, 'items');
+    } else {
+      console.log('Data is not an array:', typeof data, data);
+    }
+    
     return NextResponse.json(data);
   } catch (error) {
-    logger.error('Error creating question-KC mapping:', error);
+    logger.error('Error fetching user KC mastery:', error);
     return NextResponse.json(
-      { error: 'Failed to create question-KC mapping' },
+      { error: 'Failed to fetch user KC mastery' },
       { status: 500 }
     );
   }

@@ -26,8 +26,9 @@ export async function GET(request: NextRequest) {
     queryParams.append('page', page);
     queryParams.append('size', size);
 
+    const BACKEND_URL = process.env.BACKEND_API || 'http://localhost:8080';
     // Forward the request to the backend
-    const backendResponse = await fetch(`http://localhost:8080/api/v1/sessions/my?${queryParams.toString()}`, {
+    const backendResponse = await fetch(`${BACKEND_URL}/api/v1/sessions/my?${queryParams.toString()}`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,

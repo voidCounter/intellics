@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     logger.log('Frontend sending interaction data:', JSON.stringify(interactionData, null, 2));
 
     // Call the backend API to create the interaction
-    const backendResponse = await fetch(`${process.env.BACKEND_URL || 'http://localhost:8080'}/api/v1/interactions/track`, {
+    const backendResponse = await fetch(`${process.env.BACKEND_API || 'http://localhost:8080'}/api/v1/interactions/track`, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,

@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -57,4 +58,41 @@ public interface UserInteractionRepository extends JpaRepository<UserInteraction
      */
     @Query(value = "SELECT COUNT(*) FROM user_interactions WHERE session_id = :sessionId", nativeQuery = true)
     long countBySessionId(@Param("sessionId") UUID sessionId);
+    
+    /**
+     * Find all interactions for a user ordered by timestamp
+     */
+    @Query("""
+        SELECT ui FROM UserInteraction ui
+        LEFT JOIN FETCH ui.session s
+        LEFT JOIN FETCH ui.user u
+        LEFT JOIN FETCH ui.module m
+        LEFT JOIN FETCH ui.lesson l
+        LEFT JOIN FETCH ui.question q
+        LEFT JOIN FETCH ui.scaffold sc
+        WHERE ui.user.user_id = :userId
+        ORDER BY ui.timestamp ASC
+        """)
+    List<UserInteraction> findByUserIdOrderByTimestamp(@Param("userId") UUID userId);
+    
+    /**
+     * Find the earliest mastery_before value for each KC for a user
+     * This is used to initialize replay with historical mastery values
+     */
+    @Query("""
+        SELECT ikm.knowledgeComponent.kc_id, ikm.kcMasteryBefore
+        FROM InteractionKCMapping ikm
+        JOIN ikm.interaction ui
+        WHERE ui.user.user_id = :userId
+        AND ikm.kcMasteryBefore IS NOT NULL
+        AND ui.timestamp = (
+            SELECT MIN(ui2.timestamp)
+            FROM UserInteraction ui2
+            JOIN InteractionKCMapping ikm2 ON ui2.interaction_id = ikm2.interaction.interaction_id
+            WHERE ui2.user.user_id = :userId
+            AND ikm2.knowledgeComponent.kc_id = ikm.knowledgeComponent.kc_id
+            AND ikm2.kcMasteryBefore IS NOT NULL
+        )
+        """)
+    List<Object[]> findEarliestMasteryBeforeByUserId(@Param("userId") UUID userId);
 }

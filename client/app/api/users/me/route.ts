@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authorization header required' }, { status: 401 });
     }
 
-    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8080';
+    const backendUrl =  process.env.BACKEND_API || 'http://localhost:8080';
     const backendResponse = await fetch(`${backendUrl}/api/v1/users/me`, {
       headers: {
         'Authorization': authHeader,

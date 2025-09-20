@@ -143,13 +143,14 @@ export interface KnowledgeComponentWithRelationships {
 
 // KC Mastery types matching backend StudentKCMastery entity
 export interface KCMastery {
-  kc_id: string;
-  user_id: string;
-  p_mastery: number;
-  p_guess: number;
-  p_slip: number;
-  p_transit: number;
-  updated_at: string;
+  kcId: string;
+  kcName: string;
+  kcDescription: string;
+  pmastery: number;
+  pguess: number;
+  pslip: number;
+  ptransit: number;
+  updatedAt: string;
 }
 
 // User Interaction types matching backend UserInteractionDto

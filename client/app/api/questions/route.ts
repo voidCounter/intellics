@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { logger } from '@/lib/utils';
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL =  process.env.BACKEND_API || 'http://localhost:8080';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/questions`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/questions`, {
       headers: {
         'Authorization': authHeader,
         'Content-Type': 'application/json',
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const response = await fetch(`${API_BASE_URL}/questions`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/questions`, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,
@@ -96,7 +96,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${API_BASE_URL}/questions/${question_id}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/questions/${question_id}`, {
       method: 'PUT',
       headers: {
         'Authorization': authHeader,

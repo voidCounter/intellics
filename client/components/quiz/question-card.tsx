@@ -114,7 +114,6 @@ function useQuestionState(questionId: string) {
     loadState();
   }, [questionId, loadState]);
 
-  // Clean up on page unload
   useEffect(() => {
     const handleBeforeUnload = () => {
       const keysToRemove = [];

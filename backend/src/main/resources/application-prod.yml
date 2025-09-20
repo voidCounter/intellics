@@ -1,0 +1,98 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        show_sql: false
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    baseline-version: 0
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:} # Optional - users can provide their own
+      base-url: ${OPENAI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
+      chat:
+        completions-path: /chat/completions
+        options:
+          model: ${OPENAI_MODEL:gemma-3-12b-it}
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid,email,profile
+
+# OpenAPI/Swagger Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    docExpansion: none
+    disable-swagger-default-url: true
+  packages-to-scan: org.intellics.backend.controller
+
+# Application specific configuration
+app:
+  jwtSecret: ${JWT_SECRET}
+  jwtExpirationInMs: ${JWT_EXPIRATION_MS:86400000}
+  frontend:
+    url: ${FRONTEND_URL}
+  admin:
+    emails: ${ADMIN_EMAILS}
+  session:
+    cleanup:
+      intervalMinutes: ${SESSION_CLEANUP_INTERVAL_MINUTES:5}
+      inactivityThresholdMinutes: ${SESSION_INACTIVITY_THRESHOLD_MINUTES:6}
+      endTimeOffsetMinutes: ${SESSION_END_TIME_OFFSET_MINUTES:1}
+
+# Logging configuration for production
+logging:
+  level:
+    root: INFO
+    org.springframework.security: WARN
+    org.intellics.backend: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Server configuration
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
+
+# Management endpoints for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

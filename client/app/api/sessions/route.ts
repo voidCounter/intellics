@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8080';
+    const backendUrl =  process.env.BACKEND_API || 'http://localhost:8080';
     const backendResponse = await fetch(`${backendUrl}/api/v1/sessions`, {
       method: 'POST',
       headers: {

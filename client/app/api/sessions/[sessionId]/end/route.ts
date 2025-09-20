@@ -17,8 +17,10 @@ export async function PUT(
       );
     }
 
+    const BACKEND_URL =  process.env.BACKEND_API || 'http://localhost:8080';
+
     // Forward the request to the backend (no request body needed)
-    const backendResponse = await fetch(`http://localhost:8080/api/v1/sessions/${sessionId}/end`, {
+    const backendResponse = await fetch(`${BACKEND_URL}/api/v1/sessions/${sessionId}/end`, {
       method: 'PUT',
       headers: {
         'Authorization': authHeader,

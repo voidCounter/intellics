@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { logger } from '@/lib/utils';
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL =  process.env.BACKEND_API || 'http://localhost:8080';
 
 export async function GET(
   request: NextRequest,
@@ -20,7 +20,7 @@ export async function GET(
     }
 
     // Proxy the request to the backend
-    const response = await fetch(`${API_BASE_URL}/modules/${moduleId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/modules/${moduleId}`, {
       method: 'GET',
       headers: {
         'Authorization': authHeader,

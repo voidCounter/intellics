@@ -11,4 +11,3 @@ JOIN roles r ON r.name = 'ROLE_USER'
 WHERE NOT EXISTS (
     SELECT 1 FROM user_roles ur WHERE ur.user_id = u.user_id
 );
-

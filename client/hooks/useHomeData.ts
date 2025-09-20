@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Module } from '@/types/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 export const useHomeData = () => {
   const {
@@ -18,7 +18,7 @@ export const useHomeData = () => {
       }
 
       // Only load modules - no lessons, questions, or scaffolds
-      const response = await fetch(`${API_BASE_URL}/modules`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/modules`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

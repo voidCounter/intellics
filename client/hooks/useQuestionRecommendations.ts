@@ -23,7 +23,7 @@ export function useNextQuestion(
       }
 
       // Point to Spring Boot backend
-      const url = new URL('/api/v1/recommendations/next-question', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1');
+      const url = new URL('/api/v1/recommendations/next-question', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080');
       if (lessonId) url.searchParams.set('lessonId', lessonId);
       if (moduleId) url.searchParams.set('moduleId', moduleId);
 
@@ -67,7 +67,7 @@ export function useNextQuestionWithScaffolds(
       }
 
       // Point to Spring Boot backend
-      const url = new URL('/api/v1/recommendations/next-question-with-scaffolds', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1');
+      const url = new URL('/api/v1/recommendations/next-question-with-scaffolds', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080');
       if (lessonId) url.searchParams.set('lessonId', lessonId);
       if (moduleId) url.searchParams.set('moduleId', moduleId);
       
@@ -117,7 +117,7 @@ export function usePracticeSession(
       }
 
       // Point to Spring Boot backend
-      const url = new URL('/api/v1/recommendations/practice-session', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1');
+      const url = new URL('/api/v1/recommendations/practice-session', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080');
       url.searchParams.set('count', count.toString());
       if (lessonId) url.searchParams.set('lessonId', lessonId);
       if (moduleId) url.searchParams.set('moduleId', moduleId);
@@ -154,7 +154,7 @@ export function useGetNextQuestion() {
       }
 
       // Point to Spring Boot backend
-      const url = new URL('/api/v1/recommendations/next-question-with-scaffolds', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api/v1');
+      const url = new URL('/api/v1/recommendations/next-question-with-scaffolds', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080');
       if (lessonId) url.searchParams.set('lessonId', lessonId);
       if (moduleId) url.searchParams.set('moduleId', moduleId);
       
@@ -162,6 +162,9 @@ export function useGetNextQuestion() {
       if (moduleId && !lessonId) {
         url.searchParams.set('scope', 'all');
       }
+      
+      // Add timestamp to avoid caching issues
+      url.searchParams.set('_t', Date.now().toString());
 
       const response = await fetch(url.toString(), {
         method: 'GET',
@@ -184,6 +187,12 @@ export function useGetNextQuestion() {
     onSuccess: (data, variables) => {
       // Invalidate the query to refresh the data
       queryClient.invalidateQueries({ queryKey: ['next-question-with-scaffolds', variables.lessonId, variables.moduleId] });
+      
+      // Also invalidate the regular next-question query if it exists
+      queryClient.invalidateQueries({ queryKey: ['next-question', variables.lessonId, variables.moduleId] });
+      
+      // Invalidate practice session queries to ensure fresh recommendations
+      queryClient.invalidateQueries({ queryKey: ['practice-session', variables.lessonId, variables.moduleId] });
     },
   });
 }

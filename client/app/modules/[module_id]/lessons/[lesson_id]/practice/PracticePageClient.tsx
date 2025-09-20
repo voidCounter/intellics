@@ -234,7 +234,7 @@ export default function PracticePageClient() {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     if (!currentQuestion || !sessionId) return;
     
     // Log skip interaction
@@ -247,6 +247,60 @@ export default function PracticePageClient() {
       ).catch((error: unknown) => {
         logger.error('Failed to log skip interaction:', error);
       });
+    }
+
+    // Add the question to results as skipped
+    const result: QuizResult = {
+      questionId: currentQuestion.question_id,
+      questionText: currentQuestion.question_text,
+      userAnswer: 'Skipped',
+      correctAnswer: 'Skipped',
+      isCorrect: false,
+      hintsUsed: Array.from(usedHints).filter(hint => 
+        hint.startsWith(currentQuestion.question_id)
+      ).length,
+      scaffoldUsed: Array.from(usedScaffolds).some(scaffold => 
+        scaffold.startsWith(currentQuestion.question_id)
+      )
+    };
+    setQuizResults(prev => [...prev, result]);
+
+    // Move to next question
+    try {
+      const nextQuestion = await getNextQuestion.mutateAsync({
+        lessonId: params.lesson_id as string,
+        moduleId: params.module_id as string
+      });
+
+      if (nextQuestion) {
+        // Clean up previous question's state when moving to next question
+        cleanupQuestionStates();
+        
+        // Move to next question
+        setCurrentQuestionIndex(prev => prev + 1);
+        
+        // Log the next question presented
+        if (sessionId) {
+          logger.log('📝 Next question presented (skip):', nextQuestion.question_id);
+          interactionLogger.logQuestionPresented(
+            sessionId,
+            nextQuestion.question_id,
+            params.lesson_id as string,
+            params.module_id as string
+          ).catch((error: unknown) => {
+            logger.error('Failed to log next question presented interaction:', error);
+          });
+        }
+      } else {
+        // No more questions, show results
+        setShowResults(true);
+        setShowQuiz(false);
+      }
+    } catch (error) {
+      logger.error('Failed to get next question after skip:', error);
+      // Show results anyway
+      setShowResults(true);
+      setShowQuiz(false);
     }
   };
 

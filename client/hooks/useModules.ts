@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Module, ModuleTitle } from "@/types/api";
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
 
 // Hierarchical query keys for better cache invalidation
 const moduleKeys = {

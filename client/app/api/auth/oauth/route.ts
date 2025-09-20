@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/utils';
 export async function GET(request: NextRequest) {
   try {
-    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8080';
+    const backendUrl = process.env.BACKEND_API || 'http://localhost:8080';
     const oauthUrl = `${backendUrl}/oauth2/authorization/google`;
     
     // Redirect to the backend OAuth endpoint
