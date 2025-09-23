@@ -9,6 +9,12 @@ spring:
     baseline-on-migrate: true
     validate-on-migrate: false
     baseline-version: 0
+management:
+  actuator:
+    endpoints:
+      web:
+        exposure:
+          include: health
 
 # OpenAPI/Swagger Configuration
 springdoc:
