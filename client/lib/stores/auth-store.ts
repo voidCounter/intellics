@@ -31,6 +31,7 @@ export const useAuthStore = create<AuthState>()(
 
       // Actions
       checkAuth: async () => {
+            set({ isLoadingAuth: true }); // 🔥 start loading immediately
         try {
           // Check if we have a token in localStorage
           const token = localStorage.getItem('authToken');
@@ -61,6 +62,9 @@ export const useAuthStore = create<AuthState>()(
           logger.error('Auth check error:', error);
           localStorage.removeItem('authToken');
           set({ user: null, isAuthenticated: false, isLoadingAuth: false, isAdminMode: false });
+        }
+        finally {
+            set({ isLoadingAuth: false});
         }
       },
 
