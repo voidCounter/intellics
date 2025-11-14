@@ -81,6 +81,10 @@ IntelliCS is an Intelligent Tutoring System (ITS) for computer science education
    ./mvnw spring-boot:run
    ```
    The backend will start on [http://localhost:8080](http://localhost:8080)
+   
+   On first run, Flyway will automatically:
+   - Create all database tables (schema)
+   - Load initial educational content (51 KCs, 21 lessons, 237 questions)
 
 5. **Install and run the client:**
    ```bash
