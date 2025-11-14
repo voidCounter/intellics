@@ -14,6 +14,8 @@
 
 IntelliCS is an Intelligent Tutoring System (ITS) for computer science education. It provides personalized learning experiences by implementing key ITS principles such as providing immediate feedback, adapting to student mastery levels, and recommending appropriate content.
 
+<img width="1819" height="1232" alt="intellics-snap1" src="https://github.com/user-attachments/assets/0d33ffd9-e9c7-4bdf-92bb-4659cb1b0f0e" />
+
 ## Core Features
 
 - **Adaptive Learning**: Recommends questions and lessons based on the student's estimated knowledge mastery, leveraging a Knowledge Tracing algorithm.
