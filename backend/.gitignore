@@ -33,3 +33,6 @@ build/
 ### VS Code ###
 .vscode/
 .env
+/QUESTION_WITH_SCAFFOLDS_EXAMPLE.md
+/EXPERIMENTAL_STRATEGIES_README.md
+

@@ -1,3 +1,31 @@
+# backend/src/main/resources/application-dev.yml
 spring:
   config:
     import: optional:classpath:secrets.yml
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
+      chat:
+        completions-path: /chat/completions
+        options:
+          model: ${OPENAI_MODEL:gemma-3-12b-it}
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid,email,profile
+
+app:
+  jwtSecret: ${JWT_SECRET}
+  frontend:
+    url: ${FRONTEND_URL}
+  admin:
+    emails: ${ADMIN_EMAILS}

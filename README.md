@@ -1,75 +1,28 @@
 <div align="center">
 
-<div style="display: flex; flex-flow: row nowrap; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px;">
-  <img src="client/public/logo.svg" alt="IntelliCS Logo" width="48" height="48" />
-  <h1 style="margin: 0; font-size: 2.5em; color: #2463eb;">IntelliCS: Intelligent Tutoring System for Computer Science</h1>
+<div style="display: flex; flex-flow: row nowrap; align-items: center; justify-content: center; gap: 8px; margin-bottom: -20px;">
+  <img src="client/public/logo.svg" alt="IntelliCS Logo" width="48" height="48" style="margin-top:30px;"/>
+  <h1 style="font-size: 2.5em; color: #2463eb;">IntelliCS</h1>
 </div>
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-black.svg)](https://opensource.org/licenses/Apache-2.0)
+![Spring Boot](https://img.shields.io/badge/springboot-black?logo=spring-boot&logoColor=white)
 [![Next.js](https://img.shields.io/badge/Next.js-13.0-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-black?logo=typescript)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.0-black?logo=tailwind-css)](https://tailwindcss.com/)
-
+![Postgres](https://img.shields.io/badge/postgres-black?logo=postgresql&logoColor=white)
 </div>
 
-## 📚 Overview
+IntelliCS is an Intelligent Tutoring System (ITS) for computer science education. It provides personalized learning experiences by implementing key ITS principles such as providing immediate feedback, adapting to student mastery levels, and recommending appropriate content.
 
-IntelliCS is an Intelligent Tutoring System (ITS) designed to enhance computer science education through personalized learning experiences: Question recommendation, Lesson recommendation, scaffolding, hints. The system implements proven ITS principles to provide an engaging and effective learning environment for students.
+## Core Features
 
-## 🎯 Motivation
+- **Adaptive Learning**: Recommends questions and lessons based on the student's estimated knowledge mastery, leveraging a Knowledge Tracing algorithm.
+- **Hints and Scaffolding**: Offers contextual hints, worked examples, and interactive, step-by-step problem breakdowns to guide students.
+- **Mastery Estimation**: Uses a Hidden Markov Model to track cognitive mastery at a fine-grained level (Knowledge Components), preventing under/over practice.
+- **Comprehensive Data Collection**: Logs detailed student interactions, including question attempts, hint/scaffolding requests, and lesson progression to support educational data science.
+- **Content**: Includes 51 knowledge components, 21 lessons, and 237 questions.
 
-Computer Science education faces several challenges:
-- Students often struggle with complex concepts and problem-solving
-- Traditional learning methods may not cater to individual learning styles
-- Difficulty in tracking learning progress and identifying knowledge gaps
-
-IntelliCS addresses these challenges by implementing key ITS principles:
-- Providing instruction in problem-solving context
-- Communicating goal structure underlying problem-solving
-- Promoting abstract understanding of problem-solving knowledge
-- Representing student competence as a production set
-- Providing immediate feedback on errors
-- Adapting to student mastery levels
-- Advancing to more abstract material when appropriate
-- Withholding problems students aren't ready for
-
-## ✨ Core Features
-
-### Hints System
-- Contextual hints providing instruction in problem-solving context
-- Support for both declarative information and worked examples
-- Bottom-out hints for final solution guidance
-
-### Scaffolding
-- Interactive scaffolding with student questions
-- Tutored problem solving approach
-- Step-by-step problem breakdown
-- Goal structure communication
-- Procedural knowledge focus
-
-### Mastery Estimation
-- Knowledge Tracing algorithm implementation
-- Hidden Markov Model-based cognitive mastery estimation
-- Adaptive practice prescription
-- Prevention of under/over practice
-- Skill-level mastery tracking
-
-### Knowledge Component Model
-- Coarse-grained skill definitions
-- Fine-grained competence representation
-- Abstract understanding promotion
-- Adaptive problem selection
-
-### Data Collection
-- Comprehensive student interaction logging and recommendation logging.
-- Education data science support.
-- Research-friendly data format.
-- Interaction-level tracking.
-
-### Immediate Feedback
-- Real-time answer correctness feedback
-
-## 🛠️ Technology Stack
+## Technology Stack
 
 - **Frontend**: Next.js 13, TypeScript, Tailwind CSS
 - **Backend**: Spring Boot, Java
@@ -77,86 +30,81 @@ IntelliCS addresses these challenges by implementing key ITS principles:
 - **UI Components**: shadcn/ui
 - **State Management**: Zustand
 - **Deployment**: Vercel
-- **Analytics**: Custom implementation for learning analytics
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
 - Node.js 20.x or later
 - Java 17.x or later
+- Maven 3.x or later (or use the included Maven wrapper)
+- PostgreSQL 15.x or later
 - npm 9.x or later
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone the repository:**
    ```bash
    git clone https://github.com/voidCounter/intellics.git
    cd intellics
    ```
 
-2. Install dependencies:
+2. **Set up the database:**
    ```bash
-   npm install
+   cd backend
+   docker compose up -d
    ```
+   This starts a PostgreSQL database on port 5433.
 
-3. Run the development server:
+3. **Configure backend secrets:**
+   
+   Create a `secrets.yml` file in `backend/src/main/resources/`:
    ```bash
+   cd backend/src/main/resources
+   cp secrets.yml.example secrets.yml
+   ```
+   
+   Edit `secrets.yml` with your actual values:
+   - **Database credentials**: Match your PostgreSQL setup (default from docker-compose: username=`postgres`, password=`password`, port=`5433`)
+   - **Google OAuth**: Create credentials at [Google Cloud Console](https://console.cloud.google.com/)
+     - Create a new OAuth 2.0 Client ID
+     - Set authorized redirect URI: `http://localhost:8080/login/oauth2/code/google`
+   - **JWT Secret**: Generate a strong random string (e.g., using `openssl rand -base64 64`)
+   - **Admin emails**: Your email address for admin access
+   - **OpenAI API Key**: Optional, can be left empty
+
+4. **Run the backend:**
+   ```bash
+   cd backend
+   ./mvnw spring-boot:run
+   ```
+   The backend will start on [http://localhost:8080](http://localhost:8080)
+
+5. **Install and run the client:**
+   ```bash
+   cd client
+   npm install
    npm run dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+6. **Open the application:**
+   
+   Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
 
-
-### Completed Features ✅
-- [x] UI components and design system implementation
-- [x] Quiz system with multiple question types(written and multiple choice)
-- [x] Basic scaffolding system
-- [x] Progress tracking and analytics
-- [x] Knowledge component tracking
-- [x] CI/CD pipeline setup
-- [x] Responsive design implementation
-- [x] Immediate feedback system(for correct/incorrect response)
-- [x] Basic hint system
-- [x] Knowledge Tracing implementation
-- [x] Student interaction logging
-- [x] User authentication system
-- [x] Admin dashboard
-- [x] Question recommendation based on student's mastery level
-- [x] Lesson recommendation based on student's mastery level
-
-### Content
-Used n8n workflows to generate content for the system. Currently have 51 knowledge components, 21 lessons, 237 questions.
-
-### Data collection
-Collecting interaction data of: 
-- [x] Question attempts(correct/incorrect.)
-- [x] Question skipped(if student skips the question).
-- [x] Scaffold attempts(correct/incorrect.)
-- [x] Hint requests(different levels of hints, currently 2 levels of hints are supported for each question)
-- [x] Scaffold requests
-- [x] Lesson starts. 
-- [x] Lesson ends.
-- [x] Question presented(to log recommended question, as well as question time)
-
-
-### In Progress 🚧
+### In Progress
+- [ ] Dynamic hints and scaffolds.
 - [ ] Enhanced analytics dashboard
 - [ ] Advanced scaffolding algorithms
-- [ ] Performance optimizations(currently, the system is not optimized for large number of users)
-- [ ] Additional question types(currently, only multiple choice and written questions are supported)
-- [ ] Bottom-out hints implementation(the final solution will be provided to the student after all hints and scaffolds are requested)
-
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+- [ ] Performance optimizations
+- [ ] Additional question types
+- [ ] Admin dashboard
 
 ## License
 
 This project is licensed under the Apache-2.0 license - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+<details>
+<summary>Acknowledgments and Research Papers</summary>
 
 ### Research Papers
 
@@ -179,3 +127,5 @@ This project is licensed under the Apache-2.0 license - see the [LICENSE](LICENS
 - [10] Pardos, Z. A., et al. (2023). OATutor: An open-source adaptive tutoring system and curated content library for learning sciences research. In Proceedings of the 2023 CHI Conference on Human Factors in Computing Systems (pp. 1-17). ACM. https://doi.org/10.1145/3544548.3581574
 - [11] Aleven, V., & Koedinger, K. R. (2002). An effective metacognitive strategy: Learning by doing and explaining with a computer-based Cognitive Tutor. Cognitive Science, 26(2), 147-179.
 - [12] Koedinger, K. R., & Aleven, V. (2007). Exploring the assistance dilemma in experiments with Cognitive Tutors. Educational Psychology Review, 19(3), 239-264.
+
+</details>
