@@ -73,7 +73,7 @@ IntelliCS is an Intelligent Tutoring System (ITS) for computer science education
      - Set authorized redirect URI: `http://localhost:8080/login/oauth2/code/google`
    - **JWT Secret**: Generate a strong random string (e.g., using `openssl rand -base64 64`)
    - **Admin emails**: Your email address for admin access
-   - **OpenAI API Key**: Optional, can be left empty
+   - **Gemini API Key**: Use Gemini API Key.
 
 4. **Run the backend:**
    ```bash
