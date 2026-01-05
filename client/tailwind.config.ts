@@ -21,6 +21,10 @@ const config: Config = {
   				'Ubuntu',
   				'Cantarell',
   				'sans-serif'
+  			],
+  			serif: [
+  				'var(--font-lora)',
+  				'serif'
   			]
   		},
   		backgroundImage: {

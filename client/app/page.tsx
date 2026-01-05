@@ -1,87 +1,40 @@
-'use client';
+import Hero from "@/components/landing/Hero";
+import HeroCards from "@/components/landing/HeroCards";
+import Stats from "@/components/landing/Stats";
+import Features from "@/components/landing/Features";
+import FAQ from "@/components/landing/FAQ";
+import Footer from "@/components/landing/Footer";
+import Navbar from "@/components/landing/Navbar";
 
-import { useEffect } from 'react';
-import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useAuthStore, useMainStore } from '@/lib/stores';
-import { useHomeData } from '@/hooks/useHomeData';
-import { toast } from "sonner";
-import { ProtectedRoute } from '@/components/auth/protected-route';
-
-export default function Home() {
-  const { modules, isLoading, error, loadModules } = useHomeData();
-  const { isAuthenticated } = useAuthStore();
-  const { resetAllStores } = useMainStore();
-
-  useEffect(() => {
-    // We only load data if the user is authenticated
-    if (isAuthenticated) {
-      loadModules();
-    }
-  }, [loadModules, isAuthenticated]);
-
-  const handleReset = () => {
-    resetAllStores();
-    toast.success("All data has been reset successfully!");
-  };
-
-  if (isLoading) {
-    return (
-      <ProtectedRoute>
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <p className="text-gray-600">Loading modules...</p>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
-  }
-
-  if (error) {
-    return (
-      <ProtectedRoute>
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <p className="text-red-600">Error loading modules: {error}</p>
-            <Button 
-              onClick={() => loadModules()} 
-              className="mt-4"
-              variant="outline"
-            >
-              Retry
-            </Button>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
-  }
-
+export default function LandingPage() {
   return (
-    <ProtectedRoute>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Modules Section */}
-        <div className="mb-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Modules</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {modules.map((module) => (
-            <Card key={module.module_id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-xl">{module.module_name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-4">{module.description}</p>
-                <Button asChild className="w-full">
-                  <Link href={`/modules/${module.module_id}`}>
-                    Start Learning
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+    <div className="min-h-screen w-full bg-[#f8fafc] relative selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden">
+      {/* Improved Persistent Grid Background - No fading mask to ensure visibility everywhere */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none opacity-[0.65]"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, #e2e8f0 1.25px, transparent 1.25px),
+            linear-gradient(to bottom, #e2e8f0 1.25px, transparent 1.25px)
+          `,
+          backgroundSize: "24px 36px",
+          maskImage:
+            "radial-gradient(circle at 50% 30%, black 10%, transparent 80%)",
+          WebkitMaskImage:
+            "radial-gradient(circle at 50% 30%, black 10%, transparent 80%)",
+        }}
+      />
+
+      <div className="relative z-10 flex flex-col">
+        <main className="py-24">
+          <Navbar />
+          <Hero />
+          <Stats />
+          <Features />
+          <FAQ />
+        </main>
+        <Footer />
       </div>
-    </ProtectedRoute>
+    </div>
   );
 }
