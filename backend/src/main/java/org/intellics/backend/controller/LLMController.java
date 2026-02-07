@@ -25,13 +25,18 @@ public class LLMController {
      * Evaluate a written answer using LLM.
      * 
      * @param request The answer evaluation request
+     * @param apiKey Optional custom API key provided by the user
      * @return Evaluation result with correctness score and feedback
      */
     @PostMapping("/evaluate-answer")
     public ResponseEntity<LLMService.AnswerEvaluationResult> evaluateAnswer(
-            @RequestBody AnswerEvaluationRequest request) {
+            @RequestBody AnswerEvaluationRequest request,
+            @RequestHeader(value = "X-Gemini-API-Key", required = false) String apiKey) {
         
         log.info("Evaluating answer for question: {}", request.questionText());
+        if (apiKey != null && !apiKey.isEmpty()) {
+            log.info("Using custom API key provided by user");
+        }
         log.debug("Request details - Correct answer: {}, User answer: {}, Context: {}", 
                 request.correctAnswer(), request.userAnswer(), request.questionContext());
         
@@ -39,7 +44,8 @@ public class LLMController {
             request.questionText(),
             request.correctAnswer(),
             request.userAnswer(),
-            request.questionContext()
+            request.questionContext(),
+            apiKey
         );
         
         log.info("Evaluation result - Score: {}, IsCorrect: {}, Feedback length: {}, Analysis length: {}", 
@@ -57,14 +63,19 @@ public class LLMController {
      * Generate scaffold guidance using LLM.
      * 
      * @param request The scaffold guidance request
+     * @param apiKey Optional custom API key provided by the user
      * @return Scaffold guidance without revealing the answer
      */
     @PostMapping("/generate-scaffold")
     public ResponseEntity<LLMService.ScaffoldGuidance> generateScaffold(
-            @RequestBody ScaffoldGuidanceRequest request) {
+            @RequestBody ScaffoldGuidanceRequest request,
+            @RequestHeader(value = "X-Gemini-API-Key", required = false) String apiKey) {
         
         log.info("Generating scaffold guidance for question: {}, type: {}", 
             request.questionText(), request.scaffoldType());
+        if (apiKey != null && !apiKey.isEmpty()) {
+            log.info("Using custom API key provided by user");
+        }
         log.debug("Request details - User answer: {}, Correct answer: {}", 
                 request.userAnswer(), request.correctAnswer());
         
@@ -72,7 +83,8 @@ public class LLMController {
             request.questionText(),
             request.userAnswer(),
             request.correctAnswer(),
-            request.scaffoldType()
+            request.scaffoldType(),
+            apiKey
         );
         
         log.info("Scaffold guidance result - Guidance length: {}, Hint level: {}, Next steps length: {}", 

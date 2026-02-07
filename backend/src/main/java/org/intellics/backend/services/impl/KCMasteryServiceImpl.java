@@ -281,11 +281,16 @@ public class KCMasteryServiceImpl implements KCMasteryService {
                 masteryBefore, weight);
         }
 
-        // 3. Always update user_kc_mastery (even for non-learning interactions)
-        // This ensures updated_at timestamp is current and mastery values are preserved
-        currentMastery.setP_mastery(masteryAfter);
-        currentMastery.setUpdated_at(Instant.now());
-        studentKCMasteryRepository.save(currentMastery);
+        // 3. Update user_kc_mastery only if this was a learning interaction (mastery actually changed)
+        // This ensures updated_at truly reflects the last deliberate learning engagement
+        if (shouldUpdateMasteryWithStrategy(interaction)) {
+            currentMastery.setP_mastery(masteryAfter);
+            currentMastery.setUpdated_at(Instant.now());
+            studentKCMasteryRepository.save(currentMastery);
+            log.debug("Saved updated mastery (active interaction) for user: {}, KC: {}", userId, kcId);
+        } else {
+            log.debug("Preserving mastery timestamp (passive interaction) for user: {}, KC: {}", userId, kcId);
+        }
 
         // 4. Always create interaction-KC mapping (audit trail)
         createInteractionKCMapping(interaction, kcMapping, masteryBefore, masteryAfter);

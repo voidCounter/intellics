@@ -56,7 +56,8 @@ export default function ModulePracticePageClient() {
       staleTime: 10 * 60 * 1000, // 10 minutes - prevent refetching when switching tabs
       refetchOnWindowFocus: false, // Never refetch when switching tabs
       refetchOnMount: false, // Don't refetch when component mounts
-      refetchOnReconnect: false // Don't refetch when reconnecting
+      refetchOnReconnect: false, // Don't refetch when reconnecting
+      force: true // Allow repeating questions in practice mode
     }
   );
 
@@ -248,7 +249,8 @@ export default function ModulePracticePageClient() {
       logger.log('🔄 Requesting next question after skip...');
       const nextQuestion = await getNextQuestion.mutateAsync({
         lessonId: undefined, // No lesson ID for module practice
-        moduleId: params.module_id as string
+        moduleId: params.module_id as string,
+        force: true
       });
 
       if (nextQuestion) {
@@ -318,7 +320,8 @@ export default function ModulePracticePageClient() {
     try {
       const nextQuestion = await getNextQuestion.mutateAsync({
         lessonId: undefined, // No lesson ID for module practice
-        moduleId: params.module_id as string
+        moduleId: params.module_id as string,
+        force: true
       });
 
       if (nextQuestion) {
@@ -627,13 +630,14 @@ export default function ModulePracticePageClient() {
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Button variant="ghost" onClick={handleBackToModule} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Module
-          </Button>
-        </div>
+      <div className="min-h-screen bg-[#f8fafc]">
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-6">
+            <Button variant="ghost" onClick={handleBackToModule} className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Module
+            </Button>
+          </div>
 
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
@@ -676,6 +680,7 @@ export default function ModulePracticePageClient() {
           </div>
         </div>
       </div>
+    </div>
     </ProtectedRoute>
   );
 }

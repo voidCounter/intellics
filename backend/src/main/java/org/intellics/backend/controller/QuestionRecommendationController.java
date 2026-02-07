@@ -52,10 +52,13 @@ public class QuestionRecommendationController {
             @RequestParam(required = false) Boolean includePrerequisites,
             
             @Parameter(description = "Scope for module practice: 'all' for all KCs, 'current' for current mastery level") 
-            @RequestParam(required = false, defaultValue = "current") String scope) {
+            @RequestParam(required = false, defaultValue = "current") String scope,
+            
+            @Parameter(description = "Force recommendation even if recently completed")
+            @RequestParam(required = false, defaultValue = "false") Boolean force) {
         
         UUID userId = getCurrentUserId();
-        QuestionDto nextQuestion = questionRecommendationService.getNextQuestion(userId, lessonId, moduleId, includePrerequisites, scope);
+        QuestionDto nextQuestion = questionRecommendationService.getNextQuestion(userId, lessonId, moduleId, includePrerequisites, scope, force);
         
         if (nextQuestion == null) {
             return ResponseEntity.noContent().build();
@@ -93,10 +96,13 @@ public class QuestionRecommendationController {
             @RequestParam(required = false) Boolean includePrerequisites,
             
             @Parameter(description = "Scope for module practice: 'all' for all KCs, 'current' for current mastery level") 
-            @RequestParam(required = false, defaultValue = "current") String scope) {
+            @RequestParam(required = false, defaultValue = "current") String scope,
+            
+            @Parameter(description = "Force recommendation even if recently completed")
+            @RequestParam(required = false, defaultValue = "false") Boolean force) {
         
         UUID userId = getCurrentUserId();
-        QuestionWithScaffoldsDto nextQuestion = questionRecommendationService.getNextQuestionWithScaffolds(userId, lessonId, moduleId, includePrerequisites, scope);
+        QuestionWithScaffoldsDto nextQuestion = questionRecommendationService.getNextQuestionWithScaffolds(userId, lessonId, moduleId, includePrerequisites, scope, force);
         
         if (nextQuestion == null) {
             return ResponseEntity.noContent().build();
@@ -136,10 +142,13 @@ public class QuestionRecommendationController {
             @RequestParam(required = false) Boolean includePrerequisites,
             
             @Parameter(description = "Scope for module practice: 'all' for all KCs, 'current' for current mastery level") 
-            @RequestParam(required = false, defaultValue = "current") String scope) {
+            @RequestParam(required = false, defaultValue = "current") String scope,
+            
+            @Parameter(description = "Force recommendation even if recently completed")
+            @RequestParam(required = false, defaultValue = "false") Boolean force) {
         
         UUID userId = getCurrentUserId();
-        List<QuestionRecommendationDto> questions = questionRecommendationService.getPracticeSession(userId, lessonId, moduleId, count, includePrerequisites, scope);
+        List<QuestionRecommendationDto> questions = questionRecommendationService.getPracticeSession(userId, lessonId, moduleId, count, includePrerequisites, scope, force);
         
         return ResponseEntity.ok(
             ApiResponseDto.<List<QuestionRecommendationDto>>builder()

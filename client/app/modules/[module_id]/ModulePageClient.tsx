@@ -84,8 +84,9 @@ export default function ModulePageClient() {
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Back Button */}
+      <div className="min-h-screen bg-[#f8fafc]">
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          {/* Back Button */}
         <div className="mb-6">
           <Button variant="link" asChild className="flex items-center gap-2 w-fit">
             <Link href="/">
@@ -180,9 +181,10 @@ export default function ModulePageClient() {
               <div className="text-center py-12">
                 <p className="text-gray-600">No lessons available for this module yet.</p>
               </div>
-            )}
-        </div>
-      </ProtectedRoute>
-    );
-}
-
+                        )}
+                    </div>
+                  </div>
+                </ProtectedRoute>
+              );
+            }
+            

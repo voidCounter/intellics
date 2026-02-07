@@ -15,14 +15,23 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Get the Gemini API key from the request headers (optional)
+    const geminiApiKey = request.headers.get('x-gemini-api-key');
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': authHeader,
+    };
+
+    if (geminiApiKey) {
+      headers['X-Gemini-API-Key'] = geminiApiKey;
+    }
     
     // Forward the request to the backend LLM endpoint
     const response = await fetch(`${API_BASE_URL}/api/v1/llm/evaluate-answer`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader,
-      },
+      headers,
       body: JSON.stringify(body),
     });
 

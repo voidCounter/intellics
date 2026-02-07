@@ -2,7 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { DM_Sans, Lora } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import Navbar from "@/components/landing/Navbar";
+import { NavigationManager } from "@/components/layout/navigation-manager";
 import { AppProvider } from "@/components/providers/app-provider";
 
 const dmSans = DM_Sans({
@@ -32,7 +32,7 @@ export default function RootLayout({
       <body className={`${dmSans.variable} ${lora.variable} font-sans`}>
         <AppProvider>
           <div className="min-h-screen">
-            <Navbar />
+            <NavigationManager />
             <Toaster richColors />
             <main>{children}</main>
           </div>

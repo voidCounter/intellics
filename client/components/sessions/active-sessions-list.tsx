@@ -2,7 +2,7 @@
 
 import { useUserSessions } from '@/hooks/useUserSessions';
 import { useSessionStore } from '@/lib/stores/session-store';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Monitor, Smartphone, Tablet, Clock, User } from 'lucide-react';
@@ -27,7 +27,13 @@ const formatDate = (dateString: string | null | undefined): string => {
       return 'Invalid Date';
     }
     
-    return date.toLocaleString();
+    return date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
   } catch (error) {
     logger.error('Error parsing date:', dateString, error);
     return 'Invalid Date';
@@ -60,28 +66,31 @@ export function ActiveSessionsList({
   const otherSessions = allSessions.filter(s => s.sessionId !== sessionId);
 
   return (
-    <Card className={className}>
-      <CardHeader>
+    <Card className={`border border-slate-200 rounded-lg overflow-hidden bg-white ${className}`}>
+      <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <User className="h-5 w-5" />
-            <span>{title}</span>
-          </CardTitle>
+          <div>
+            <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <User className="h-5 w-5 text-slate-900" />
+              {title}
+            </CardTitle>
+            <CardDescription className="text-slate-500 mt-0.5 text-xs">Manage your active login sessions</CardDescription>
+          </div>
           {showRefreshButton && (
             <Button
               variant="outline"
               size="sm"
               onClick={refetch}
               disabled={sessionsLoading}
-              className="flex items-center space-x-2"
+              className="rounded-xl border-slate-200 shadow-sm font-bold text-slate-600 px-4"
             >
-              <RefreshCw className={`h-4 w-4 ${sessionsLoading ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
+              <RefreshCw className={`h-4 w-4 mr-2 ${sessionsLoading ? 'animate-spin' : ''}`} />
+              Refresh
             </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="px-6 py-6 space-y-6">
         {sessionsLoading ? (
           <div className="text-center py-12">
             <div className="flex items-center justify-center space-x-2">
@@ -99,123 +108,76 @@ export function ActiveSessionsList({
           </div>
         ) : (
           <>
-            {/* Current Session - Highlighted at top */}
             {currentSession && (
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                  <h3 className="text-lg font-semibold text-foreground">Current Session</h3>
+                  <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Current Session</h3>
                 </div>
                 
-                <div className="bg-gradient-to-r from-primary/5 to-primary/10 border-2 border-primary/20 rounded-xl p-6 shadow-sm">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
+                <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-2 bg-white border border-slate-200 rounded-md">
                         {getDeviceIcon(currentSession.deviceType)}
                       </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="default" className="bg-primary text-primary-foreground">
-                            Active Now
-                          </Badge>
-                        </div>
-                      </div>
+                      <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-0 font-bold px-1.5 py-0 text-[9px]">
+                        ACTIVE NOW
+                      </Badge>
                     </div>
-                    <div className="text-xs text-muted-foreground font-mono bg-card px-2 py-1 rounded border border-border">
-                      {currentSession.sessionId.substring(0, 8)}...
+                    <div className="text-[9px] text-slate-400 font-mono">
+                      ID: {currentSession.sessionId.substring(0, 6)}
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <div className="text-xs text-muted-foreground uppercase tracking-wide">Started</div>
-                        <div className="text-sm font-medium text-foreground">
-                          {formatDate(currentSession.startTime)}
-                        </div>
+                  <div className="grid grid-cols-2 gap-4 text-[10px]">
+                    <div>
+                      <div className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Started</div>
+                      <div className="font-semibold text-slate-900">
+                        {formatDate(currentSession.startTime)}
                       </div>
                     </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      <div>
-                        <div className="text-xs text-muted-foreground uppercase tracking-wide">Last Active</div>
-                        <div className="text-sm font-medium text-foreground">
-                          {currentSession.lastActiveAt ? formatDate(currentSession.lastActiveAt) : 'Just now'}
-                        </div>
+                    <div>
+                      <div className="text-[9px] text-slate-400 font-bold uppercase mb-0.5">Last Sync</div>
+                      <div className="font-semibold text-slate-900">
+                        {currentSession.lastActiveAt ? formatDate(currentSession.lastActiveAt) : 'Just now'}
                       </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">User Agent</div>
-                    <div className="text-xs text-foreground font-mono bg-card p-3 rounded-lg border border-border break-all">
-                      {currentSession.userAgent || 'Unknown'}
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Other Sessions */}
             {otherSessions.length > 0 && (
-              <div className="space-y-4">
+              <div className="space-y-4 pt-4 border-t border-slate-100">
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
-                  <h3 className="text-lg font-semibold text-foreground">
-                    Other Active Sessions ({otherSessions.length})
+                  <div className="w-1.5 h-1.5 bg-slate-300 rounded-full"></div>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Other Active Devices ({otherSessions.length})
                   </h3>
                 </div>
                 
-                <div className="grid gap-4">
+                <div className="grid grid-cols-1 gap-2">
                   {otherSessions.map((session) => (
                     <div
                       key={session.sessionId}
-                      className="bg-muted/30 border border-border rounded-lg p-4 hover:shadow-md transition-shadow"
+                      className="bg-white border border-slate-100 rounded-lg p-3 flex items-center justify-between"
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-muted rounded-lg">
-                            {getDeviceIcon(session.deviceType)}
-                          </div>
-                          <div>
-                            <div className="flex items-center space-x-2">
-                            </div>
-                          </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-slate-50 border border-slate-100 rounded-md">
+                          {getDeviceIcon(session.deviceType)}
                         </div>
-                        <div className="text-xs text-muted-foreground font-mono bg-card px-2 py-1 rounded border border-border">
-                          {session.sessionId.substring(0, 8)}...
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <div className="text-xs text-muted-foreground">Started</div>
-                            <div className="text-foreground">
-                              {formatDate(session.startTime)}
-                            </div>
+                        <div className="space-y-0.5">
+                          <div className="text-[10px] font-bold text-slate-900 uppercase tracking-tight">
+                            {session.deviceType || 'Unknown Device'}
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
-                          <div>
-                            <div className="text-xs text-muted-foreground">Last Active</div>
-                            <div className="text-foreground">
-                              {session.lastActiveAt ? formatDate(session.lastActiveAt) : 'Not tracked yet'}
-                            </div>
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            {formatDate(session.startTime)}
                           </div>
                         </div>
                       </div>
-                      
-                      <div className="mt-3">
-                        <div className="text-xs text-muted-foreground mb-2">User Agent</div>
-                        <div className="text-xs text-foreground font-mono bg-card p-2 rounded border border-border break-all">
-                          {session.userAgent || 'Unknown'}
-                        </div>
+                      <div className="text-[8px] text-slate-200 font-mono">
+                        {session.sessionId.substring(0, 6)}
                       </div>
                     </div>
                   ))}

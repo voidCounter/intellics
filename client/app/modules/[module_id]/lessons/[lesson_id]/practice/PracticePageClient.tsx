@@ -70,7 +70,8 @@ export default function PracticePageClient() {
       staleTime: 10 * 60 * 1000, // 10 minutes - prevent refetching when switching tabs
       refetchOnWindowFocus: false, // Never refetch when switching tabs
       refetchOnMount: false, // Don't refetch when component mounts
-      refetchOnReconnect: false // Don't refetch when reconnecting
+      refetchOnReconnect: false, // Don't refetch when reconnecting
+      force: true // Allow repeating questions in practice mode
     }
   );
 
@@ -269,7 +270,8 @@ export default function PracticePageClient() {
     try {
       const nextQuestion = await getNextQuestion.mutateAsync({
         lessonId: params.lesson_id as string,
-        moduleId: params.module_id as string
+        moduleId: params.module_id as string,
+        force: true
       });
 
       if (nextQuestion) {
@@ -308,7 +310,8 @@ export default function PracticePageClient() {
     try {
       const nextQuestion = await getNextQuestion.mutateAsync({
         lessonId: params.lesson_id as string,
-        moduleId: params.module_id as string
+        moduleId: params.module_id as string,
+        force: true
       });
 
       if (nextQuestion) {
@@ -603,13 +606,14 @@ export default function PracticePageClient() {
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Button variant="ghost" onClick={handleBackToLesson} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Lesson
-          </Button>
-        </div>
+      <div className="min-h-screen bg-[#f8fafc]">
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-6">
+            <Button variant="ghost" onClick={handleBackToLesson} className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Lesson
+            </Button>
+          </div>
 
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
@@ -652,6 +656,7 @@ export default function PracticePageClient() {
           </div>
         </div>
       </div>
+    </div>
     </ProtectedRoute>
   );
 }

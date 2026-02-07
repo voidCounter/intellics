@@ -125,8 +125,9 @@ export default function LessonPageClient() {
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Back Button */}
+      <div className="min-h-screen bg-[#f8fafc]">
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          {/* Back Button */}
         <div className="mb-6 w-fit">
           <Button variant="link" asChild className="flex items-center gap-2">
             <Link href={`/modules/${params.module_id}`}>
@@ -187,11 +188,10 @@ export default function LessonPageClient() {
                 </div>
               </CardContent>
             </Card>
-
-
           </div>
         </div>
       </div>
+    </div>
     </ProtectedRoute>
   );
 }

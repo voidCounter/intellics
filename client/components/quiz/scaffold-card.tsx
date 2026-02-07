@@ -10,6 +10,7 @@ import { Scaffold } from '@/types/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { evaluateAnswerWithLLM } from '@/services/api';
+import { ApiKeyAlertDialog } from './api-key-alert-dialog';
 
 import { logger } from '@/lib/utils';
 interface ScaffoldCardProps {
@@ -36,6 +37,7 @@ export function ScaffoldCard({
   const [lastIsCorrect, setLastIsCorrect] = useState(false);
   const [llmFeedback, setLlmFeedback] = useState<string | null>(null);
   const [llmAnalysis, setLlmAnalysis] = useState<string | null>(null);
+  const [showApiKeyAlert, setShowApiKeyAlert] = useState(false);
 
   // Reset state when scaffold changes
   useEffect(() => {
@@ -49,6 +51,13 @@ export function ScaffoldCard({
 
   const handleSubmit = async () => {
     if (!writtenAnswer.trim()) return;
+
+    // Check if API key is present
+    const geminiApiKey = localStorage.getItem('geminiApiKey');
+    if (!geminiApiKey) {
+      setShowApiKeyAlert(true);
+      return;
+    }
 
     setIsEvaluating(true);
     try {
@@ -200,9 +209,14 @@ export function ScaffoldCard({
               {isEvaluating ? 'Evaluating...' : 'Submit Step'}
               {!isEvaluating && <ArrowRight className="h-4 w-4" />}
             </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+                    </div>
+                  )}
+                </CardContent>
+                <ApiKeyAlertDialog 
+                  isOpen={showApiKeyAlert} 
+                  onOpenChange={setShowApiKeyAlert} 
+                />
+              </Card>
+            );
+          }
+          

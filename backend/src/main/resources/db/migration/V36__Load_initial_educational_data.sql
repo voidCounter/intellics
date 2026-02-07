@@ -2,8 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict 93BEPnLoz40z26UXYtQrRvNlYuxnDrGhMYlEMkaZTnMltwimC5rCCycL1uHq6vs
-
 -- Dumped from database version 16.9 (Debian 16.9-1.pgdg120+1)
 -- Dumped by pg_dump version 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1)
 
@@ -17,6 +15,10 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+DO $seed_data$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.knowledge_components LIMIT 1) THEN
 
 --
 -- Data for Name: experimental_strategies; Type: TABLE DATA; Schema: public; Owner: postgres
@@ -6065,8 +6067,11 @@ INSERT INTO public.written_questions (question_id, answer_explanation, correct_a
 
 
 --
+
+END IF;
+END;
+$seed_data$;
+
 -- PostgreSQL database dump complete
 --
-
-\unrestrict 93BEPnLoz40z26UXYtQrRvNlYuxnDrGhMYlEMkaZTnMltwimC5rCCycL1uHq6vs
 

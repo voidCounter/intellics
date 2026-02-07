@@ -1,6 +1,6 @@
 -- Add order_index field to module_lesson_mapping table
 ALTER TABLE module_lesson_mapping 
-ADD COLUMN order_index INTEGER DEFAULT 0;
+ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
 
 -- Update existing records to have sequential order_index values
 -- Group by module_id and assign incremental order_index starting from 1
@@ -18,5 +18,10 @@ WHERE module_lesson_mapping.module_id = ordered_lessons.module_id
   AND module_lesson_mapping.lesson_id = ordered_lessons.lesson_id;
 
 -- Make order_index NOT NULL after setting initial values
-ALTER TABLE module_lesson_mapping 
-ALTER COLUMN order_index SET NOT NULL;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'module_lesson_mapping' AND column_name = 'order_index' AND is_nullable = 'YES') THEN
+        ALTER TABLE module_lesson_mapping ALTER COLUMN order_index SET NOT NULL;
+    END IF;
+END;
+$$;

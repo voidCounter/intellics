@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.intellics.backend.services.LLMService;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Service;
 
 /**
@@ -16,9 +19,40 @@ import org.springframework.stereotype.Service;
 public class LLMServiceImpl implements LLMService {
 
     private final ChatClient chatClient;
+    
+    @org.springframework.beans.factory.annotation.Value("${spring.ai.openai.base-url:https://generativelanguage.googleapis.com/v1beta/openai/}")
+    private String baseUrl;
+
+    @org.springframework.beans.factory.annotation.Value("${spring.ai.openai.chat.options.model:gemini-1.5-flash}")
+    private String modelName;
 
     // Correctness threshold for written answers (80% - stricter grading)
     private static final double CORRECTNESS_THRESHOLD = 0.8;
+
+    private ChatClient getChatClient(String apiKey) {
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            return this.chatClient;
+        }
+        
+        try {
+            log.debug("Creating custom ChatClient with user-provided API key");
+            OpenAiApi openAiApi = OpenAiApi.builder()
+                .baseUrl(baseUrl)
+                .apiKey(apiKey)
+                .build();
+            OpenAiChatModel chatModel = OpenAiChatModel.builder()
+                .openAiApi(openAiApi)
+                .defaultOptions(OpenAiChatOptions.builder()
+                    .model(modelName)
+                    .build())
+                .build();
+                    
+            return ChatClient.builder(chatModel).build();
+        } catch (Exception e) {
+            log.error("Failed to create custom ChatClient: {}", e.getMessage());
+            return this.chatClient;
+        }
+    }
 
     // No system prompts needed for Gemma models
 
@@ -114,6 +148,11 @@ public class LLMServiceImpl implements LLMService {
     
     @Override
     public AnswerEvaluationResult evaluateWrittenAnswer(String questionText, String correctAnswer, String userAnswer, String questionContext) {
+        return evaluateWrittenAnswer(questionText, correctAnswer, userAnswer, questionContext, null);
+    }
+
+    @Override
+    public AnswerEvaluationResult evaluateWrittenAnswer(String questionText, String correctAnswer, String userAnswer, String questionContext, String apiKey) {
         try {
             log.info("=== Starting LLM Answer Evaluation ===");
             
@@ -159,7 +198,7 @@ public class LLMServiceImpl implements LLMService {
 );
 
             // Use Spring AI to call the model and automatically map the JSON response
-            AnswerEvaluationResponse response = chatClient.prompt()
+            AnswerEvaluationResponse response = getChatClient(apiKey).prompt()
                 .user(prompt)
                 .call()
                 .entity(AnswerEvaluationResponse.class);
@@ -185,6 +224,11 @@ public class LLMServiceImpl implements LLMService {
 
     @Override
     public ScaffoldGuidance generateScaffoldGuidance(String questionText, String userAnswer, String correctAnswer, String scaffoldType) {
+        return generateScaffoldGuidance(questionText, userAnswer, correctAnswer, scaffoldType, null);
+    }
+
+    @Override
+    public ScaffoldGuidance generateScaffoldGuidance(String questionText, String userAnswer, String correctAnswer, String scaffoldType, String apiKey) {
         try {
             log.info("=== Starting LLM Scaffold Guidance Generation ===");
             
@@ -213,7 +257,7 @@ public class LLMServiceImpl implements LLMService {
             );
 
             // Use Spring AI to call the model and automatically map the JSON response
-            ScaffoldGuidanceResponse response = chatClient.prompt()
+            ScaffoldGuidanceResponse response = getChatClient(apiKey).prompt()
                 .user(prompt)
                 .call()
                 .entity(ScaffoldGuidanceResponse.class);

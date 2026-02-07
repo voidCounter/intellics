@@ -2,9 +2,6 @@
 const nextConfig = {
   // Removed 'output: export' to enable API routes
   devIndicators: false,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },

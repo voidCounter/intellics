@@ -173,12 +173,21 @@ export async function evaluateAnswerWithLLM(
       throw new Error('No auth token available');
     }
 
+    // Get optional Gemini API key from localStorage
+    const geminiApiKey = localStorage.getItem('geminiApiKey');
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    };
+
+    if (geminiApiKey) {
+      headers['X-Gemini-API-Key'] = geminiApiKey;
+    }
+
     const response = await fetch('/api/llm/evaluate-answer', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+      headers,
       body: JSON.stringify({
         questionText,
         correctAnswer,

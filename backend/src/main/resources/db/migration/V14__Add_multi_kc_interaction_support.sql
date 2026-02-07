@@ -7,10 +7,10 @@
 
 -- Add module_id to student_interactions for learning path context
 ALTER TABLE student_interactions 
-ADD COLUMN module_id UUID REFERENCES modules(module_id);
+ADD COLUMN IF NOT EXISTS module_id UUID REFERENCES modules(module_id);
 
 -- Create interaction_kc_mapping table for multi-KC support
-CREATE TABLE interaction_kc_mapping (
+CREATE TABLE IF NOT EXISTS interaction_kc_mapping (
     interaction_id UUID NOT NULL REFERENCES student_interactions(interaction_id) ON DELETE CASCADE,
     kc_id UUID NOT NULL REFERENCES knowledge_components(kc_id) ON DELETE CASCADE,
     weight DOUBLE PRECISION NOT NULL DEFAULT 1.0,
@@ -21,8 +21,8 @@ CREATE TABLE interaction_kc_mapping (
 );
 
 -- Create index for efficient KC-based queries
-CREATE INDEX idx_interaction_kc_mapping_kc_id ON interaction_kc_mapping(kc_id);
-CREATE INDEX idx_interaction_kc_mapping_interaction_id ON interaction_kc_mapping(interaction_id);
+CREATE INDEX IF NOT EXISTS idx_interaction_kc_mapping_kc_id ON interaction_kc_mapping(kc_id);
+CREATE INDEX IF NOT EXISTS idx_interaction_kc_mapping_interaction_id ON interaction_kc_mapping(interaction_id);
 
 -- Migrate existing data: move kc_id from student_interactions to interaction_kc_mapping
 -- Only migrate records that have a kc_id (some might be null)
@@ -34,10 +34,11 @@ SELECT
     p_mastery as kc_mastery_before,  -- Use existing p_mastery as before value
     p_mastery as kc_mastery_after    -- Use existing p_mastery as after value
 FROM student_interactions 
-WHERE kc_id IS NOT NULL;
+WHERE kc_id IS NOT NULL
+ON CONFLICT DO NOTHING;
 
 -- Remove kc_id column from student_interactions (data is now in interaction_kc_mapping)
-ALTER TABLE student_interactions DROP COLUMN kc_id;
+ALTER TABLE student_interactions DROP COLUMN IF EXISTS kc_id;
 
 -- Add comments for documentation
 COMMENT ON TABLE interaction_kc_mapping IS 'Maps interactions to Knowledge Components with weights. Supports both single-KC (most common) and multi-KC scenarios.';

@@ -19,6 +19,8 @@ import org.intellics.backend.mappers.Mapper;
 import org.intellics.backend.repositories.KnowledgeComponentRepository;
 import org.intellics.backend.repositories.LessonKCMappingRepository;
 import org.intellics.backend.repositories.ModuleKCMappingRepository;
+import org.intellics.backend.repositories.ModuleKCPrerequisiteRepository;
+import org.intellics.backend.repositories.ModuleLessonMappingRepository;
 import org.intellics.backend.repositories.QuestionKCMappingRepository;
 import org.intellics.backend.services.KnowledgeComponentService;
 import org.modelmapper.ModelMapper;
@@ -36,7 +38,9 @@ public class KnowledgeComponentServiceImpl implements KnowledgeComponentService 
     private final KnowledgeComponentRepository knowledgeComponentRepository;
     private final ModuleKCMappingRepository moduleKCMappingRepository;
     private final LessonKCMappingRepository lessonKCMappingRepository;
+    private final ModuleLessonMappingRepository moduleLessonMappingRepository;
     private final QuestionKCMappingRepository questionKCMappingRepository;
+    private final ModuleKCPrerequisiteRepository moduleKCPrerequisiteRepository;
     private final Mapper<KnowledgeComponentSimpleDto, KnowledgeComponent> knowledgeComponentSimpleMapper;
     private final ModelMapper modelMapper;
 
@@ -44,13 +48,17 @@ public class KnowledgeComponentServiceImpl implements KnowledgeComponentService 
             KnowledgeComponentRepository knowledgeComponentRepository,
             ModuleKCMappingRepository moduleKCMappingRepository,
             LessonKCMappingRepository lessonKCMappingRepository,
+            ModuleLessonMappingRepository moduleLessonMappingRepository,
             QuestionKCMappingRepository questionKCMappingRepository,
+            ModuleKCPrerequisiteRepository moduleKCPrerequisiteRepository,
             Mapper<KnowledgeComponentSimpleDto, KnowledgeComponent> knowledgeComponentSimpleMapper,
             ModelMapper modelMapper) {
         this.knowledgeComponentRepository = knowledgeComponentRepository;
         this.moduleKCMappingRepository = moduleKCMappingRepository;
         this.lessonKCMappingRepository = lessonKCMappingRepository;
+        this.moduleLessonMappingRepository = moduleLessonMappingRepository;
         this.questionKCMappingRepository = questionKCMappingRepository;
+        this.moduleKCPrerequisiteRepository = moduleKCPrerequisiteRepository;
         this.knowledgeComponentSimpleMapper = knowledgeComponentSimpleMapper;
         this.modelMapper = modelMapper;
     }
@@ -245,11 +253,18 @@ public class KnowledgeComponentServiceImpl implements KnowledgeComponentService 
         List<KnowledgeComponentWithRelationshipsDto.LinkedLessonDto> linkedLessons = lessonKCMappingRepository
                 .findByKnowledgeComponentId(kc.getKc_id())
                 .stream()
-                .map(mapping -> KnowledgeComponentWithRelationshipsDto.LinkedLessonDto.builder()
+                .map(mapping -> {
+                    // Find the module this lesson belongs to (pick the first one if multiple)
+                    List<org.intellics.backend.domain.entities.ModuleLessonMapping> moduleMappings = moduleLessonMappingRepository.findByLessonId(mapping.getLesson().getLesson_id());
+                    UUID moduleId = moduleMappings.isEmpty() ? null : moduleMappings.get(0).getMappingId().getModuleId();
+                    
+                    return KnowledgeComponentWithRelationshipsDto.LinkedLessonDto.builder()
                         .lesson_id(mapping.getLesson().getLesson_id())
+                        .module_id(moduleId)
                         .lesson_name(mapping.getLesson().getLesson_name())
                         .target_mastery(mapping.getTarget_mastery().doubleValue())
-                        .build())
+                        .build();
+                })
                 .collect(Collectors.toList());
 
         // Get linked questions - need to find by KC ID since repository doesn't have findByKnowledgeComponent
@@ -263,6 +278,32 @@ public class KnowledgeComponentServiceImpl implements KnowledgeComponentService 
                         .build())
                 .collect(Collectors.toList());
 
+        // Get prerequisites (where this KC is the 'kc_id' and we need 'prerequisite_kc_id')
+        List<KnowledgeComponentWithRelationshipsDto.PrerequisiteDto> prerequisites = StreamSupport
+                .stream(moduleKCPrerequisiteRepository.findAll().spliterator(), false)
+                .filter(mapping -> mapping.getId().getKcId().equals(kc.getKc_id()))
+                .map(mapping -> KnowledgeComponentWithRelationshipsDto.PrerequisiteDto.builder()
+                        .kc_id(mapping.getPrerequisiteKnowledgeComponent().getKc_id())
+                        .kc_name(mapping.getPrerequisiteKnowledgeComponent().getKc_name())
+                        .module_id(mapping.getModule().getModule_id())
+                        .module_name(mapping.getModule().getModule_name())
+                        .rationale(mapping.getRationale())
+                        .build())
+                .collect(Collectors.toList());
+
+        // Get dependents (where this KC is the 'prerequisite_kc_id')
+        List<KnowledgeComponentWithRelationshipsDto.PrerequisiteDto> dependents = StreamSupport
+                .stream(moduleKCPrerequisiteRepository.findAll().spliterator(), false)
+                .filter(mapping -> mapping.getId().getPrerequisiteKcId().equals(kc.getKc_id()))
+                .map(mapping -> KnowledgeComponentWithRelationshipsDto.PrerequisiteDto.builder()
+                        .kc_id(mapping.getKnowledgeComponent().getKc_id())
+                        .kc_name(mapping.getKnowledgeComponent().getKc_name())
+                        .module_id(mapping.getModule().getModule_id())
+                        .module_name(mapping.getModule().getModule_name())
+                        .rationale(mapping.getRationale())
+                        .build())
+                .collect(Collectors.toList());
+
         return KnowledgeComponentWithRelationshipsDto.builder()
                 .kc_id(kc.getKc_id())
                 .kc_name(kc.getKc_name())
@@ -270,6 +311,8 @@ public class KnowledgeComponentServiceImpl implements KnowledgeComponentService 
                 .linkedModules(linkedModules)
                 .linkedLessons(linkedLessons)
                 .linkedQuestions(linkedQuestions)
+                .prerequisites(prerequisites)
+                .dependents(dependents)
                 .build();
     }
 }

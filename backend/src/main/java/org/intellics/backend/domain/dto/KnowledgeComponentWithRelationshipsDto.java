@@ -25,6 +25,9 @@ public class KnowledgeComponentWithRelationshipsDto {
     private List<LinkedLessonDto> linkedLessons;
     private List<LinkedQuestionDto> linkedQuestions;
     
+    private List<PrerequisiteDto> prerequisites;
+    private List<PrerequisiteDto> dependents;
+    
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -40,6 +43,7 @@ public class KnowledgeComponentWithRelationshipsDto {
     @Builder
     public static class LinkedLessonDto {
         private UUID lesson_id;
+        private UUID module_id;
         private String lesson_name;
         private Double target_mastery;
     }
@@ -52,5 +56,17 @@ public class KnowledgeComponentWithRelationshipsDto {
         private UUID question_id;
         private String question_text;
         private Double weight;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PrerequisiteDto {
+        private UUID kc_id;
+        private String kc_name;
+        private UUID module_id;
+        private String module_name;
+        private String rationale;
     }
 }

@@ -2,15 +2,26 @@
 -- This migration renames tables to use "user" instead of "student" prefix
 
 -- Rename student_interactions to user_interactions
-ALTER TABLE student_interactions RENAME TO user_interactions;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'student_interactions') THEN
+        ALTER TABLE student_interactions RENAME TO user_interactions;
+    END IF;
+END;
+$$;
 
 -- Rename studentkcmastery to user_kc_mastery (more readable)
-ALTER TABLE studentkcmastery RENAME TO user_kc_mastery;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'studentkcmastery') THEN
+        ALTER TABLE studentkcmastery RENAME TO user_kc_mastery;
+    END IF;
+END;
+$$;
 
 -- Update foreign key constraint references in interaction_kc_mapping
--- (The constraint should automatically update, but let's be explicit)
 ALTER TABLE interaction_kc_mapping 
-DROP CONSTRAINT interaction_kc_mapping_interaction_id_fkey;
+DROP CONSTRAINT IF EXISTS interaction_kc_mapping_interaction_id_fkey;
 
 ALTER TABLE interaction_kc_mapping 
 ADD CONSTRAINT interaction_kc_mapping_interaction_id_fkey 

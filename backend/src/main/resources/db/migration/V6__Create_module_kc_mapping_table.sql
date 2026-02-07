@@ -1,4 +1,4 @@
-CREATE TABLE module_kc_mapping (
+CREATE TABLE IF NOT EXISTS module_kc_mapping (
     module_id UUID NOT NULL,
     kc_id UUID NOT NULL,
     prerequisite_kc_id UUID,
@@ -9,4 +9,4 @@ CREATE TABLE module_kc_mapping (
 );
 
 ALTER TABLE knowledge_components
-DROP COLUMN prerequisite_kc_id;
+DROP COLUMN IF EXISTS prerequisite_kc_id;

@@ -4,11 +4,15 @@
 
 -- Add answer_correctness column (0.0 to 1.0 score from AI evaluation)
 ALTER TABLE user_interactions 
-ADD COLUMN answer_correctness DECIMAL(3,2) CHECK (answer_correctness >= 0.0 AND answer_correctness <= 1.0);
+ADD COLUMN IF NOT EXISTS answer_correctness DECIMAL(3,2);
+
+ALTER TABLE user_interactions DROP CONSTRAINT IF EXISTS chk_answer_correctness_range;
+ALTER TABLE user_interactions 
+ADD CONSTRAINT chk_answer_correctness_range CHECK (answer_correctness >= 0.0 AND answer_correctness <= 1.0);
 
 -- Add answer_analysis column (detailed AI feedback and analysis)
 ALTER TABLE user_interactions 
-ADD COLUMN answer_analysis TEXT;
+ADD COLUMN IF NOT EXISTS answer_analysis TEXT;
 
 -- Add comments for documentation
 COMMENT ON COLUMN user_interactions.answer_correctness IS 'AI-evaluated correctness score from 0.0 to 1.0, where 0.0 is completely wrong and 1.0 is perfect';

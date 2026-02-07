@@ -1,8 +1,8 @@
 -- Add full-text search vector column to modules table
-ALTER TABLE modules ADD COLUMN search_vector tsvector;
+ALTER TABLE modules ADD COLUMN IF NOT EXISTS search_vector tsvector;
 
 -- Create a GIN index for fast full-text search
-CREATE INDEX modules_search_idx ON modules USING GIN(search_vector);
+CREATE INDEX IF NOT EXISTS modules_search_idx ON modules USING GIN(search_vector);
 
 -- Update existing modules with search vectors
 UPDATE modules SET search_vector = 
@@ -18,6 +18,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger to automatically update search vector
+DROP TRIGGER IF EXISTS modules_search_vector_update ON modules;
 CREATE TRIGGER modules_search_vector_update
   BEFORE INSERT OR UPDATE ON modules
   FOR EACH ROW

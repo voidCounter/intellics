@@ -4,7 +4,6 @@ import Stats from "@/components/landing/Stats";
 import Features from "@/components/landing/Features";
 import FAQ from "@/components/landing/FAQ";
 import Footer from "@/components/landing/Footer";
-import Navbar from "@/components/landing/Navbar";
 
 export default function LandingPage() {
   return (
@@ -26,8 +25,7 @@ export default function LandingPage() {
       />
 
       <div className="relative z-10 flex flex-col">
-        <main className="py-24">
-          <Navbar />
+        <main className="">
           <Hero />
           <Stats />
           <Features />

@@ -5,6 +5,9 @@
 ALTER TABLE user_interactions 
 DROP CONSTRAINT IF EXISTS student_interactions_interaction_type_check;
 
+ALTER TABLE user_interactions 
+DROP CONSTRAINT IF EXISTS user_interactions_interaction_type_check;
+
 -- Add the new constraint with all current enum values
 ALTER TABLE user_interactions 
 ADD CONSTRAINT user_interactions_interaction_type_check 

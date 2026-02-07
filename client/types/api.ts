@@ -125,12 +125,15 @@ export interface KnowledgeComponentWithRelationships {
   kc_id: string;
   kc_name: string;
   description: string;
+  created_at?: string;
+  updated_at?: string;
   linkedModules: Array<{
     module_id: string;
     module_name: string;
   }>;
   linkedLessons: Array<{
     lesson_id: string;
+    module_id: string;
     lesson_name: string;
     target_mastery: number;
   }>;
@@ -138,6 +141,20 @@ export interface KnowledgeComponentWithRelationships {
     question_id: string;
     question_text: string;
     weight: number;
+  }>;
+  prerequisites: Array<{
+    kc_id: string;
+    kc_name: string;
+    module_id: string;
+    module_name: string;
+    rationale?: string;
+  }>;
+  dependents: Array<{
+    kc_id: string;
+    kc_name: string;
+    module_id: string;
+    module_name: string;
+    rationale?: string;
   }>;
 }
 

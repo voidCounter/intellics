@@ -23,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class QuestionRecommendationServiceImpl implements QuestionRecommendationService {
 
     private final JdbcTemplate jdbcTemplate;
@@ -31,6 +30,7 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
     private final Mapper<QuestionDto, QuestionEntity> questionMapper;
     private final QuestionWithScaffoldsMapper questionWithScaffoldsMapper;
     private final UserInteractionService userInteractionService;
+    private final org.intellics.backend.services.MasteryDecayService masteryDecayService;
     
     // Row mapper for converting SQL results to DTOs
     private final RowMapper<QuestionRecommendationDto> recommendationRowMapper = (rs, rowNum) ->
@@ -46,8 +46,16 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
             .build();
 
     @Override
-    public QuestionDto getNextQuestion(UUID userId, UUID lessonId, UUID moduleId, Boolean includePrerequisites, String scope) {
-        log.debug("Getting next question for user {} (lesson: {}, module: {}, scope: {})", userId, lessonId, moduleId, scope);
+    public QuestionDto getNextQuestion(UUID userId, UUID lessonId, UUID moduleId, Boolean includePrerequisites, String scope, Boolean force) {
+        log.debug("Getting next question for user {} (lesson: {}, module: {}, scope: {}, force: {})", userId, lessonId, moduleId, scope, force);
+        
+        // Apply mastery decay based on recency before getting recommendations
+        try {
+            masteryDecayService.applyDecay(userId, lessonId, moduleId);
+        } catch (Exception e) {
+            log.warn("Failed to apply mastery decay: {}", e.getMessage());
+            // Continue with recommendations even if decay fails
+        }
         
         // Determine context and parameters
         String context = lessonId != null ? "lesson" : "global";
@@ -57,6 +65,9 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
         if (moduleId != null && "all".equals(scope)) {
             includePrereqs = true; // Always include prerequisites for comprehensive practice
         }
+
+        // Determine max recency days based on force flag
+        int maxRecencyDays = (force != null && force) ? 0 : 30;
         
        String sql = """
     SELECT * FROM recommend_questions(
@@ -74,8 +85,8 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
 """; 
 
         
-        log.debug("About to call recommend_questions function with params: userId={}, context={}, lessonId={}, moduleId={}, limit=1, includePrereqs={}, maxRecencyDays=30, skipRecencyDays=3, perKcLimit=1", 
-            userId, context, lessonId, moduleId, includePrereqs);
+        log.debug("About to call recommend_questions function with params: userId={}, context={}, lessonId={}, moduleId={}, limit=1, includePrereqs={}, maxRecencyDays={}, skipRecencyDays=3, perKcLimit=1", 
+            userId, context, lessonId, moduleId, includePrereqs, maxRecencyDays);
         
         try {
             List<QuestionRecommendationDto> recommendations = jdbcTemplate.query(
@@ -87,7 +98,7 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
                 moduleId,
                 1, // Get only 1 question
                 includePrereqs,
-                30, // Default max recency days
+                maxRecencyDays,
                 3, // Default skip recency days
                 1   // Default per KC limit
             );
@@ -127,8 +138,16 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
     }
 
     @Override
-    public QuestionWithScaffoldsDto getNextQuestionWithScaffolds(UUID userId, UUID lessonId, UUID moduleId, Boolean includePrerequisites, String scope) {
-        log.debug("Getting next question with scaffolds for user {} (lesson: {}, module: {}, scope: {})", userId, lessonId, moduleId, scope);
+    public QuestionWithScaffoldsDto getNextQuestionWithScaffolds(UUID userId, UUID lessonId, UUID moduleId, Boolean includePrerequisites, String scope, Boolean force) {
+        log.debug("Getting next question with scaffolds for user {} (lesson: {}, module: {}, scope: {}, force: {})", userId, lessonId, moduleId, scope, force);
+        
+        // Apply mastery decay based on recency before getting recommendations
+        try {
+            masteryDecayService.applyDecay(userId, lessonId, moduleId);
+        } catch (Exception e) {
+            log.warn("Failed to apply mastery decay: {}", e.getMessage());
+            // Continue with recommendations even if decay fails
+        }
         
         // Determine context and parameters
         String context = lessonId != null ? "lesson" : "global";
@@ -138,6 +157,9 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
         if (moduleId != null && "all".equals(scope)) {
             includePrereqs = true; // Always include prerequisites for comprehensive practice
         }
+
+        // Determine max recency days based on force flag
+        int maxRecencyDays = (force != null && force) ? 0 : 30;
         
        String sql = """
     SELECT * FROM recommend_questions(
@@ -154,8 +176,8 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
     LIMIT 1
 """; 
         
-        log.debug("About to call recommend_questions function with params: userId={}, context={}, lessonId={}, moduleId={}, limit=1, includePrereqs={}, maxRecencyDays=30, skipRecencyDays=3, perKcLimit=1", 
-            userId, context, lessonId, moduleId, includePrereqs);
+        log.debug("About to call recommend_questions function with params: userId={}, context={}, lessonId={}, moduleId={}, limit=1, includePrereqs={}, maxRecencyDays={}, skipRecencyDays=3, perKcLimit=1", 
+            userId, context, lessonId, moduleId, includePrereqs, maxRecencyDays);
         
         try {
             List<QuestionRecommendationDto> recommendations = jdbcTemplate.query(
@@ -167,7 +189,7 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
                 moduleId,
                 1, // Get only 1 question
                 includePrereqs,
-                30, // Default max recency days
+                maxRecencyDays,
                 3, // Default skip recency days
                 1   // Default per KC limit
             );
@@ -176,6 +198,51 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
                 recommendations.size(), userId, context, lessonId, moduleId);
             
             if (recommendations.isEmpty()) {
+                log.debug("No more questions available for user {} in context {}", userId, context);
+                log.debug("Recommendation function returned 0 recommendations for user {} in context {} (lessonId={}, moduleId={})",
+                        userId, context, lessonId, moduleId);
+                
+                // DIAGNOSTIC: Check if questions actually exist for these KCs
+                if ("lesson".equals(context) && lessonId != null) {
+                    try {
+                        List<UUID> kcs = jdbcTemplate.queryForList(
+                            "SELECT kc_id FROM lesson_kc_mapping WHERE lesson_id = ?",
+                            UUID.class, lessonId
+                        );
+                        log.info("DIAGNOSTIC: Lesson has {} KCs: {}", kcs.size(), kcs);
+                        
+                        for (UUID kc : kcs) {
+                            try {
+                                Double targetMastery = jdbcTemplate.queryForObject(
+                                    "SELECT target_mastery FROM lesson_kc_mapping WHERE lesson_id = ? AND kc_id = ?",
+                                    Double.class, lessonId, kc
+                                );
+                                Double actualMastery = jdbcTemplate.queryForObject(
+                                    "SELECT p_mastery FROM user_kc_mastery WHERE user_id = ? AND kc_id = ?",
+                                    Double.class, userId, kc
+                                );
+                                Integer qCountMapped = jdbcTemplate.queryForObject(
+                                    "SELECT count(*) FROM question_kc_mapping WHERE kc_id = ?", 
+                                    Integer.class, kc
+                                );
+                                Integer qCountFull = jdbcTemplate.queryForObject(
+                                    "SELECT count(*) FROM question_kc_mapping qkm " +
+                                    "JOIN questions q ON q.question_id = qkm.question_id " +
+                                    "WHERE qkm.kc_id = ?", 
+                                    Integer.class, kc
+                                );
+                                
+                                log.info("DIAGNOSTIC: KC {} - User Mastery: {}, Target Mastery: {}, Mapped Questions: {}, Full Questions (Joined): {}", 
+                                    kc, actualMastery, targetMastery, qCountMapped, qCountFull);
+                            } catch (Exception e) {
+                                log.warn("DIAGNOSTIC: Error checking KC {}: {}", kc, e.getMessage());
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("DIAGNOSTIC: Failed to run diagnostic: {}", e.getMessage());
+                    }
+                }
+                
                 log.debug("No more questions available for user {} in context {}", userId, context);
                 return null;
             }
@@ -207,9 +274,17 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
     }
 
     @Override
-    public List<QuestionRecommendationDto> getPracticeSession(UUID userId, UUID lessonId, UUID moduleId, int count, Boolean includePrerequisites, String scope) {
-        log.debug("Getting practice session for user {} (lesson: {}, module: {}, count: {}, scope: {})", 
-            userId, lessonId, moduleId, count, scope);
+    public List<QuestionRecommendationDto> getPracticeSession(UUID userId, UUID lessonId, UUID moduleId, int count, Boolean includePrerequisites, String scope, Boolean force) {
+        log.debug("Getting practice session for user {} (lesson: {}, module: {}, count: {}, scope: {}, force: {})", 
+            userId, lessonId, moduleId, count, scope, force);
+        
+        // Apply mastery decay based on recency before getting recommendations
+        try {
+            masteryDecayService.applyDecay(userId, lessonId, moduleId);
+        } catch (Exception e) {
+            log.warn("Failed to apply mastery decay: {}", e.getMessage());
+            // Continue with recommendations even if decay fails
+        }
         
         // Determine context and parameters
         String context = lessonId != null ? "lesson" : "global";
@@ -219,10 +294,21 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
         if (moduleId != null && "all".equals(scope)) {
             includePrereqs = true; // Always include prerequisites for comprehensive practice
         }
+
+        // Determine max recency days based on force flag
+        int maxRecencyDays = (force != null && force) ? 0 : 30;
         
         String sql = """
             SELECT * FROM recommend_questions(
-                ?, ?, ?, ?, ?, ?, ?, ?
+                ?::uuid,
+                ?::text,
+                ?::uuid,
+                ?::uuid,
+                ?::int,
+                ?::boolean,
+                ?::int,
+                ?::int,
+                ?::int
             )
             """;
         
@@ -236,7 +322,8 @@ public class QuestionRecommendationServiceImpl implements QuestionRecommendation
                 moduleId,
                 count,
                 includePrereqs,
-                30, // Default max recency days
+                maxRecencyDays,
+                3, // skipRecencyDays
                 2   // Default per KC limit
             );
             

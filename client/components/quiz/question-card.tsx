@@ -16,6 +16,7 @@ import remarkGfm from 'remark-gfm';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useLearningStore } from '@/lib/stores';
 import { evaluateAnswerWithLLM } from '@/services/api';
+import { ApiKeyAlertDialog } from './api-key-alert-dialog';
 
 import { logger } from '@/lib/utils';
 interface QuestionCardProps {
@@ -299,6 +300,7 @@ export function QuestionCard({
   const { currentLesson } = useLearningStore();
   const { state, updateState } = useQuestionState(question.question_id);
   const { submitAnswer, isEvaluating } = useAnswerSubmission(question, onSubmit);
+  const [showApiKeyAlert, setShowApiKeyAlert] = useState(false);
 
   // Debug: Log when component renders
   logger.log('🔄 QuestionCard rendered for question:', question.question_id, 'at:', new Date().toISOString());
@@ -314,6 +316,16 @@ export function QuestionCard({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if API key is present for written answers
+    if (question.type === 'WRITTEN') {
+      const geminiApiKey = localStorage.getItem('geminiApiKey');
+      if (!geminiApiKey) {
+        setShowApiKeyAlert(true);
+        return;
+      }
+    }
+
     const answer = question.type === 'MULTIPLE_CHOICE' ? state.selectedAnswer : state.writtenAnswer;
     
     const result = await submitAnswer(answer);
@@ -634,8 +646,13 @@ export function QuestionCard({
               </Button>
             </>
           )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+                </div>
+              </CardContent>
+              <ApiKeyAlertDialog 
+                isOpen={showApiKeyAlert} 
+                onOpenChange={setShowApiKeyAlert} 
+              />
+            </Card>
+          );
+        }
+        

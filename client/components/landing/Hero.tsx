@@ -9,7 +9,7 @@ import Link from "next/link";
 
 export default function Hero() {
   return (
-    <section className="relative pt-24 pb-12 overflow-hidden">
+    <section className="relative pt-48 pb-12 overflow-hidden">
       <div className="container mx-auto px-6 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}

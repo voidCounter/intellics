@@ -7,6 +7,7 @@ interface UseNextQuestionOptions {
   refetchOnWindowFocus?: boolean;
   refetchOnMount?: boolean;
   refetchOnReconnect?: boolean;
+  force?: boolean;
 }
 
 export function useNextQuestion(
@@ -15,7 +16,7 @@ export function useNextQuestion(
   options: UseNextQuestionOptions = {}
 ) {
   return useQuery({
-    queryKey: ['next-question', lessonId, moduleId],
+    queryKey: ['next-question', lessonId, moduleId, options.force],
     queryFn: async (): Promise<Question | null> => {
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -26,6 +27,7 @@ export function useNextQuestion(
       const url = new URL('/api/v1/recommendations/next-question', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080');
       if (lessonId) url.searchParams.set('lessonId', lessonId);
       if (moduleId) url.searchParams.set('moduleId', moduleId);
+      if (options.force) url.searchParams.set('force', 'true');
 
       const response = await fetch(url.toString(), {
         method: 'GET',
@@ -59,7 +61,7 @@ export function useNextQuestionWithScaffolds(
   options: UseNextQuestionOptions = {}
 ) {
   return useQuery({
-    queryKey: ['next-question-with-scaffolds', lessonId, moduleId],
+    queryKey: ['next-question-with-scaffolds', lessonId, moduleId, options.force],
     queryFn: async (): Promise<Question | null> => {
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -70,6 +72,7 @@ export function useNextQuestionWithScaffolds(
       const url = new URL('/api/v1/recommendations/next-question-with-scaffolds', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080');
       if (lessonId) url.searchParams.set('lessonId', lessonId);
       if (moduleId) url.searchParams.set('moduleId', moduleId);
+      if (options.force) url.searchParams.set('force', 'true');
       
       // For module practice, use "all" scope to get questions from all KCs
       if (moduleId && !lessonId) {
@@ -109,7 +112,7 @@ export function usePracticeSession(
   options: UseNextQuestionOptions = {}
 ) {
   return useQuery({
-    queryKey: ['practice-session', lessonId, moduleId, count],
+    queryKey: ['practice-session', lessonId, moduleId, count, options.force],
     queryFn: async (): Promise<QuestionRecommendationDto[]> => {
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -121,6 +124,7 @@ export function usePracticeSession(
       url.searchParams.set('count', count.toString());
       if (lessonId) url.searchParams.set('lessonId', lessonId);
       if (moduleId) url.searchParams.set('moduleId', moduleId);
+      if (options.force) url.searchParams.set('force', 'true');
 
       const response = await fetch(url.toString(), {
         method: 'GET',
@@ -147,7 +151,7 @@ export function useGetNextQuestion() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ lessonId, moduleId }: { lessonId?: string; moduleId?: string }): Promise<Question | null> => {
+    mutationFn: async ({ lessonId, moduleId, force }: { lessonId?: string; moduleId?: string; force?: boolean }): Promise<Question | null> => {
       const token = localStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
@@ -157,6 +161,7 @@ export function useGetNextQuestion() {
       const url = new URL('/api/v1/recommendations/next-question-with-scaffolds', process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080');
       if (lessonId) url.searchParams.set('lessonId', lessonId);
       if (moduleId) url.searchParams.set('moduleId', moduleId);
+      if (force) url.searchParams.set('force', 'true');
       
       // For module practice, use "all" scope to get questions from all KCs
       if (moduleId && !lessonId) {
